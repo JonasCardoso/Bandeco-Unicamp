@@ -1,0 +1,13 @@
+# Distribution / packaging
+env/
+bin/
+development.ini
+include/
+lib/
+lib64
+myapp/
+__pycache__/
+.idea/
+production.ini
+firebase.json
+insta.json
