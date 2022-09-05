@@ -30,7 +30,7 @@ def comidaSitePrefeitura(data):
                 cardapio += j.strip() + '\n'
             cardapios.append(cardapio[0:-4])
 
-        cafe = 'Café com leite\nPão\nMargarina\nGeleia\nFruta\n\n'
+        cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
         cardapios.append(cafe)
 
         return cardapios
