@@ -29,6 +29,9 @@ def comidaSitePrefeitura(data):
             for j in i:
                 cardapio += j.strip() + '\n'
             cardapios.append(cardapio[0:-4])
+            
+        if len(cardapios) == 0:
+          return None
 
         cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
         cardapios.append(cafe)
@@ -61,6 +64,9 @@ def comidaSiteJson(data):
                     cardapio += i[chave].replace('\r', '') + '\n'
 
             cardapios.append(cardapio)
+            
+    if len(cardapios) == 0:
+      return None
 
     cafe = 'Café com leite\nPão\nMargarina\nGeleia\nFruta\n\n'
     cardapios.append(cafe)
