@@ -41,7 +41,7 @@ def notificarCardapio(context: CallbackContext):
                                      context.job.context)
     mensagemCardapioTelegram('@bandecounicamp', context, cardapio, hoje)
     mensagemCardapioTwitter(context, cardapio, hoje)
-    mensagemCardapioInstagram(context, cardapio, hoje)
+    #mensagemCardapioInstagram(context, cardapio, hoje)
 
     for id, dados in usuarios.items():
         if dados[dadosPeriodo] == 1:
