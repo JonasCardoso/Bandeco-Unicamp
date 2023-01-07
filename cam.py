@@ -48,16 +48,19 @@ class Cam:
             cameras = [CAM_RS]
 
         for camera in cameras:
-            if CAM_IS_JSON:
-                resp = urllib.request.urlopen(CAM_WEB + camera + '.json')
-                resp = json.loads(resp.read().decode('utf-8'))
-                imagem = base64.b64decode(resp['image_jpg_b64'])
-                imagem = np.frombuffer(imagem, dtype="uint8")
-                imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
-            else:
-                resp = urllib.request.urlopen(CAM_WEB + camera + '.jpg')
-                imagem = np.asarray(bytearray(resp.read()), dtype="uint8")
-                imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
+            try:
+                if CAM_IS_JSON:
+                    resp = urllib.request.urlopen(CAM_WEB + camera + '.json')
+                    resp = json.loads(resp.read().decode('utf-8'))
+                    imagem = base64.b64decode(resp['image_jpg_b64'])
+                    imagem = np.frombuffer(imagem, dtype="uint8")
+                    imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
+                else:
+                    resp = urllib.request.urlopen(CAM_WEB + camera + '.jpg')
+                    imagem = np.asarray(bytearray(resp.read()), dtype="uint8")
+                    imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
+            except:
+                return
 
             imagens.append(imagem)
 
