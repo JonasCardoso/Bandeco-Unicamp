@@ -29,9 +29,9 @@ def comidaSitePrefeitura(data):
             for j in i:
                 cardapio += j.strip() + '\n'
             cardapios.append(cardapio[0:-4])
-            
+
         if len(cardapios) == 0:
-          return None
+            return None
 
         cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
         cardapios.append(cafe)
@@ -43,32 +43,35 @@ def comidaSitePrefeitura(data):
 
 
 def comidaSiteJson(data):
-    response = req.post(URL_BANDECO_JSON, timeout=5)
+    try:
+        response = req.post(URL_BANDECO_JSON, timeout=5)
 
-    if 'Server-unavailable!' in response.text or 'Acesso indevido' in response.text or response.status_code != 200:
+        if 'Server-unavailable!' in response.text or 'Acesso indevido' in response.text or response.status_code != 200:
+            return None
+
+        cardapios = list()
+        chaves = ['PRATO_PRINCIPAL', 'ACOMPANHAMENTO', 'PTS', 'GUARNICAO', 'SALADA', 'SOBREMESA', 'SUCO', 'OBS']
+
+        for i in response.json()['CARDAPIO']:
+            if i['DATA'] == data:
+                cardapio = ''
+                for chave in chaves:
+                    if i[chave] == '-':
+                        continue
+                    if chave == chaves[-1]:
+                        cardapio += '\n' + 'Observações:\n'
+                        cardapio += i[chave].replace('\r', '').replace('<FONT COLOR =\"RED\">', '\n')
+                    else:
+                        cardapio += i[chave].replace('\r', '') + '\n'
+
+                cardapios.append(cardapio)
+
+        if len(cardapios) == 0:
+            return None
+
+        cafe = 'Café com leite\nPão\nMargarina\nGeleia\nFruta\n\n'
+        cardapios.append(cafe)
+
+        return cardapios
+    except:
         return None
-
-    cardapios = list()
-    chaves = ['PRATO_PRINCIPAL', 'ACOMPANHAMENTO', 'PTS', 'GUARNICAO', 'SALADA', 'SOBREMESA', 'SUCO', 'OBS']
-
-    for i in response.json()['CARDAPIO']:
-        if i['DATA'] == data:
-            cardapio = ''
-            for chave in chaves:
-                if i[chave] == '-':
-                    continue
-                if chave == chaves[-1]:
-                    cardapio += '\n' + 'Observações:\n'
-                    cardapio += i[chave].replace('\r', '').replace('<FONT COLOR =\"RED\">', '\n')
-                else:
-                    cardapio += i[chave].replace('\r', '') + '\n'
-
-            cardapios.append(cardapio)
-            
-    if len(cardapios) == 0:
-      return None
-
-    cafe = 'Café com leite\nPão\nMargarina\nGeleia\nFruta\n\n'
-    cardapios.append(cafe)
-
-    return cardapios
