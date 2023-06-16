@@ -21,7 +21,7 @@ cam = cm.Cam()
 def start(update: Update, context: CallbackContext):
     if firebase.criarUsuario(update.effective_chat.id):
         mandarMensagem(context, update.effective_chat.id, 'Olá Unicamper, seja bem-vindo ao Bandeco Unicamp, consulte '
-                                                          'e receba os cardapio diários da universidade!!!')
+                                                          'e receba os cardápios diários da universidade!!!')
         return
     else:
         mandarMensagem(context, update.effective_chat.id,
