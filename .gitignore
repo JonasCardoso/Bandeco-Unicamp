@@ -11,3 +11,7 @@ __pycache__/
 production.ini
 firebase.json
 insta.json
+google.json
+img_obs_post_1.jpg
+img_cardapio_post_0.jpg
+.env
