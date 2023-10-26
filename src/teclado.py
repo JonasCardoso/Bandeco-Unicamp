@@ -1,21 +1,21 @@
 from telegram import KeyboardButton
-from util import verificarAtividade
+from util import verificar_atividade
 
 
-def tecladoDiasSemana(periodo, DIAS):
-    return [[KeyboardButton(f'{periodo} de {DIAS[i]}')] for i in range(0, len(DIAS))]
+def teclado_dias_semana(periodo, dias):
+    return [[KeyboardButton(f'{periodo} de {dias[i]}')] for i in range(0, len(dias))]
 
 
-def tecladoModalidades(dados):
-    return ([[KeyboardButton(f"Tradicional - {verificarAtividade(dados, 'tradicional')}")],
-             [KeyboardButton(f"Vegano - {verificarAtividade(dados, 'vegano')}")]])
+def teclado_modalidades(dados):
+    return ([[KeyboardButton(f"Tradicional - {verificar_atividade(dados, 'tradicional')}")],
+             [KeyboardButton(f"Vegano - {verificar_atividade(dados, 'vegano')}")]])
 
 
-def tecladoNotificacao(dados):
-    return ([[KeyboardButton(f"Café - {verificarAtividade(dados, 'cafe')}")],
-             [KeyboardButton(f"Almoço - {verificarAtividade(dados, 'almoco')}")],
-             [KeyboardButton(f"Jantar - {verificarAtividade(dados, 'jantar')}")]])
+def teclado_notificacao(dados):
+    return ([[KeyboardButton(f"Café - {verificar_atividade(dados, 'cafe')}")],
+             [KeyboardButton(f"Almoço - {verificar_atividade(dados, 'almoco')}")],
+             [KeyboardButton(f"Jantar - {verificar_atividade(dados, 'jantar')}")]])
 
 
-def tecladoContato():
+def teclado_contato():
     return [[KeyboardButton("Compartilhar meu contato", request_contact=True)]]

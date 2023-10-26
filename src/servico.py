@@ -3,57 +3,57 @@ from telegram.ext import CallbackContext
 import bandeco
 import config
 import datetime as dt
-import metaServico
+import meta_servico
 import log as lg
-import telegramServico
-import twitterServico
+import telegram_servico
+import twitter_servico
 from util import DIAS, MODALIDADES, HORARIO_CAFE, HORARIO_ALMOCO, HORARIO_JANTAR
 
 log = lg.Log()
 firebase = config.Config()
 
 
-async def notificarCardapio(context: CallbackContext):
-    usuarios = firebase.pegarTodosUsuarios()
+async def notificar_cardapio(context: CallbackContext):
+    usuarios = firebase.pegar_todos_usuarios()
     if not usuarios:
-        log.adicionarLog(f'notificarCardapio - {0} - Não foi possível pegar todos usuários')
-        await log.enviarLog(context)
+        log.adicionar_log(f'notificarCardapio - {0} - Não foi possível pegar todos usuários')
+        await log.enviar_log(context)
         return
 
     hoje = dt.datetime.today()
     comida = bandeco.comida(hoje.strftime('%Y-%m-%d'))
 
     if comida is None:
-        log.adicionarLog(f'notificarCardapio - {0} - Não foi possível consultar o cardápio')
-        await log.enviarLog(context)
+        log.adicionar_log(f'notificarCardapio - {0} - Não foi possível consultar o cardápio')
+        await log.enviar_log(context)
         return
 
-    dadosPeriodo = ''
+    dados_periodo = ''
     modalidade = ''
 
     if hoje.hour == HORARIO_CAFE:
-        dadosPeriodo = 'cafe'
+        dados_periodo = 'cafe'
         modalidade = 'Café da manhã'
     elif hoje.hour == HORARIO_ALMOCO:
-        dadosPeriodo = 'almoco'
+        dados_periodo = 'almoco'
         modalidade = 'Almoço'
     elif hoje.hour == HORARIO_JANTAR:
-        dadosPeriodo = 'jantar'
+        dados_periodo = 'jantar'
         modalidade = 'Jantar'
 
-    cardapio = modalidadeComCardapio(comida, {"tradicional": 1, "vegano": 1, "cafe": 1, "almoco": 1, "jantar": 1},
-                                     modalidade)
-    await mensagemCardapioTelegram('@bandecounicamp', context, cardapio, hoje)
-    await mensagemCardapioTwitter(context, cardapio, hoje)
-    await mensagemCardapioInstagram(context, cardapio, hoje)
+    cardapio = modalidade_com_cardapio(comida, {"tradicional": 1, "vegano": 1, "cafe": 1, "almoco": 1, "jantar": 1},
+                                       modalidade)
+    await mensagem_cardapio_telegram('@bandecounicamp', context, cardapio, hoje)
+    await mensagem_cardapio_twitter(context, cardapio, hoje)
+    await mensagem_cardapio_instagram(context, cardapio, hoje)
 
-    for id, dados in usuarios.items():
-       if dados[dadosPeriodo] == 1:
-            cardapio = modalidadeComCardapio(comida, dados, modalidade)
-            await mensagemCardapioTelegram(id, context, cardapio, hoje)
+    for id_usuario, dados in usuarios.items():
+        if dados[dados_periodo] == 1:
+            cardapio = modalidade_com_cardapio(comida, dados, modalidade)
+            await mensagem_cardapio_telegram(id_usuario, context, cardapio, hoje)
 
 
-def modalidadeComCardapio(comida, dados, periodo):
+def modalidade_com_cardapio(comida, dados, periodo):
     cardapio = list()
 
     if 'Café da manhã' == periodo:
@@ -80,16 +80,17 @@ def modalidadeComCardapio(comida, dados, periodo):
     return cardapio
 
 
-async def mensagemCardapioTelegram(id, context, cardapio, dia):
+async def mensagem_cardapio_telegram(id_usuario, context, cardapio, dia):
     for item, modalidade in cardapio:
-        await telegramServico.mandarMensagem(context, id, f'* {modalidade} de {DIAS[dia.weekday()]} * \n\n{item}')
+        await telegram_servico.mandar_mensagem(context, id_usuario, f'* {modalidade} de {DIAS[dia.weekday()]} '
+                                                                    f'* \n\n{item}')
 
 
-async def mensagemCardapioTwitter(context, cardapio, dia):
+async def mensagem_cardapio_twitter(context, cardapio, dia):
     for item, modalidade in cardapio:
-        await twitterServico.postarTweet(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
+        await twitter_servico.postar_tweet(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
 
 
-async def mensagemCardapioInstagram(context, cardapio, dia):
+async def mensagem_cardapio_instagram(context, cardapio, dia):
     for item, modalidade in cardapio:
-        await metaServico.postarInsta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
+        await meta_servico.postar_insta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)

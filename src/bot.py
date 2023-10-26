@@ -6,8 +6,8 @@ import time
 
 from telegram.ext import CommandHandler, filters, MessageHandler, Application
 from comando import start, cafe, almoco, jantar, modalidade, notificacao, saldo, ru, ra, rs, horario, ajuda, mensagem, \
-    contato, twitter, instagram, desativar, mensagemContato
-from servico import notificarCardapio
+    contato, twitter, instagram, desativar, mensagem_contato
+from servico import notificar_cardapio
 from util import HORARIO_CAFE, HORARIO_ALMOCO, HORARIO_JANTAR, TOKEN_BOT_TELEGRAM
 
 os.environ["TZ"] = 'America/Sao_Paulo'
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 def main():
     application = Application.builder().token(TOKEN_BOT_TELEGRAM).build()
 
-    cafeHorario = dt.time(hour=int(HORARIO_CAFE), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    almocoHorario = dt.time(hour=int(HORARIO_ALMOCO), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    jantarHorario = dt.time(hour=int(HORARIO_JANTAR), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    application.job_queue.run_daily(notificarCardapio, cafeHorario, days=tuple(range(0, 7)), name='Café da manhã')
-    application.job_queue.run_daily(notificarCardapio, almocoHorario, days=tuple(range(0, 7)), name='Almoço')
-    application.job_queue.run_daily(notificarCardapio, jantarHorario, days=tuple(range(0, 7)), name='Jantar')
+    cafe_horario = dt.time(hour=int(HORARIO_CAFE), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
+    almoco_horario = dt.time(hour=int(HORARIO_ALMOCO), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
+    jantar_horario = dt.time(hour=int(HORARIO_JANTAR), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
+    application.job_queue.run_daily(notificar_cardapio, cafe_horario, days=tuple(range(0, 7)), name='Café da manhã')
+    application.job_queue.run_daily(notificar_cardapio, almoco_horario, days=tuple(range(0, 7)), name='Almoço')
+    application.job_queue.run_daily(notificar_cardapio, jantar_horario, days=tuple(range(0, 7)), name='Jantar')
 
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler("cafe", cafe))
@@ -47,7 +47,7 @@ def main():
     application.add_handler(CommandHandler('desativar', desativar))
     application.add_handler(CommandHandler('ajuda', ajuda))
     application.add_handler(MessageHandler(filters.TEXT, mensagem))
-    application.add_handler(MessageHandler(filters.CONTACT, mensagemContato))
+    application.add_handler(MessageHandler(filters.CONTACT, mensagem_contato))
 
     application.run_polling()
 

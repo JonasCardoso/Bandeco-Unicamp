@@ -12,21 +12,21 @@ firebase_admin.initialize_app(cred, {
 class Config:
     ref = db.reference("/usuarios")
 
-    def adicionarContato(self, dados, id):
+    def adicionar_contato(self, dados, id_user):
         try:
-            self.ref.child(str(id)).update(dados)
+            self.ref.child(str(id_user)).update(dados)
             return True
         except:
             return False
 
-    def atualizarUsuario(self, dados, id):
+    def atualizar_usuario(self, dados, id_user):
         try:
-            self.ref.child(str(id)).update(dados)
+            self.ref.child(str(id_user)).update(dados)
             return True
         except:
             return False
 
-    def pegarTodosUsuarios(self):
+    def pegar_todos_usuarios(self):
         try:
             item = dict(self.ref.get())
             if len(item) > 0:
@@ -36,19 +36,19 @@ class Config:
         except:
             return False
 
-    def pegarUsuario(self, id):
+    def pegar_usuario(self, id_user):
         try:
-            item = dict(self.ref.order_by_key().equal_to(str(id)).get())
+            item = dict(self.ref.order_by_key().equal_to(str(id_user)).get())
             if len(item) > 0:
-                return item[str(id)]
+                return item[str(id_user)]
             else:
                 return False
         except:
             return False
 
-    def criarUsuario(self, id):
+    def criar_usuario(self, id_user):
         try:
             dados = {"tradicional": 1, "vegano": 0, "cafe": 0, "almoco": 1, "jantar": 1, "telefone": 0}
-            return self.atualizarUsuario(dados, str(id))
+            return self.atualizar_usuario(dados, str(id_user))
         except:
             return False

@@ -2,11 +2,11 @@ import json
 import os
 
 
-def verificarAtividade(dados, campo):
+def verificar_atividade(dados, campo):
     return "Inativo" if not dados[campo] else "Ativo"
 
 
-def salvarJSON(dados, nome):
+def salvar_json(dados, nome):
     with open(f'{nome}.json', 'w', encoding='utf-8') as f:
         json.dump(json.loads(dados), f, ensure_ascii=False, indent=4)
 
@@ -44,4 +44,4 @@ PATH_FONTE_LATO_MEDIUM = 'src/fonte/Lato-Medium.ttf'
 DIAS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo']
 MODALIDADES = ['Almoço Tradicional', 'Almoço Vegetariano', 'Jantar Tradicional', 'Jantar Vegetariano', 'Café da manhã']
 
-salvarJSON(FIREBASE_JSON, 'firebase')
+salvar_json(FIREBASE_JSON, 'firebase')

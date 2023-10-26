@@ -4,13 +4,13 @@ from bs4 import BeautifulSoup
 
 
 def comida(data):
-    cardapios = comidaSitePrefeitura(data)
+    cardapios = comida_site_prefeitura(data)
     if cardapios is None:
-        cardapios = comidaSiteJson(data)
+        cardapios = comida_site_json(data)
     return cardapios
 
 
-def comidaSitePrefeitura(data):
+def comida_site_prefeitura(data):
     try:
         response = req.get(URL_BANDECO_PREFEITURA + data, timeout=5)
 
@@ -42,7 +42,7 @@ def comidaSitePrefeitura(data):
         return None
 
 
-def comidaSiteJson(data):
+def comida_site_json(data):
     try:
         response = req.post(URL_BANDECO_JSON, timeout=5)
 

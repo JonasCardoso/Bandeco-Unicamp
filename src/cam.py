@@ -11,12 +11,12 @@ import urllib.request
 from util import CAM_WEB, CAM_RU_A, CAM_RU_B, CAM_RA, CAM_RS, CAM_IS_JSON
 
 
-def salvarImagem(imagens, cameras):
+def salvar_imagem(imagens, cameras):
     for imagem, camera in zip(imagens, cameras):
         cv2.imwrite(f'{pathlib.Path().resolve()}/{camera}.jpg', imagem)
 
 
-def verificarAtualizacao(atualizacao):
+def verificar_atualizacao(atualizacao):
     data = dt.datetime.today() - timedelta(minutes=atualizacao.minute)
     return True if data.minute > 0 else False
 
@@ -26,23 +26,23 @@ class Cam:
     atualizacao_ra = dt.datetime.today() - timedelta(minutes=1)
     atualizacao_rs = dt.datetime.today() - timedelta(minutes=1)
 
-    def pegarImagem(self, id):
+    def pegar_imagem(self, id_cam):
         imagens = list()
 
-        if id == 'ru':
-            if not (verificarAtualizacao(self.atualizacao_ru)):
+        if id_cam == 'ru':
+            if not (verificar_atualizacao(self.atualizacao_ru)):
                 return
             self.atualizacao_ru = dt.datetime.today()
             cameras = [CAM_RU_A, CAM_RU_B]
 
-        elif id == 'ra':
-            if not (verificarAtualizacao(self.atualizacao_ra)):
+        elif id_cam == 'ra':
+            if not (verificar_atualizacao(self.atualizacao_ra)):
                 return
             self.atualizacao_ra = dt.datetime.today()
             cameras = [CAM_RA]
 
         else:
-            if not (verificarAtualizacao(self.atualizacao_rs)):
+            if not (verificar_atualizacao(self.atualizacao_rs)):
                 return
             self.atualizacao_rs = dt.datetime.today()
             cameras = [CAM_RS]
@@ -64,4 +64,4 @@ class Cam:
 
             imagens.append(imagem)
 
-        salvarImagem(imagens, cameras)
+        salvar_imagem(imagens, cameras)

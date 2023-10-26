@@ -3,7 +3,7 @@ from util import URL_HORARIO
 from bs4 import BeautifulSoup
 
 
-def horarioFuncionamento():
+def horario_funcionamento():
     try:
         horarios = ''
         response = req.get(URL_HORARIO)
