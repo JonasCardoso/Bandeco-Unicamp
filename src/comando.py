@@ -28,7 +28,7 @@ async def start(update: Update, context: CallbackContext):
         await mandar_mensagem(context, update.effective_chat.id,
                               'Olá Unicamper, houve algum problema na base de dados, use /start novamente!!!')
         log.adicionar_log(f'start - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                         f'{update.effective_chat.username} - Não foi possível criar o usuário')
+                          f'{update.effective_chat.username} - Não foi possível criar o usuário')
         await log.enviar_log(context)
 
 
@@ -60,7 +60,7 @@ async def modalidade(update: Update, context: CallbackContext):
         return
 
     log.adicionar_log(f'modalidade - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                     f'{update.effective_chat.username} - Não foi possível pegar o usuário')
+                      f'{update.effective_chat.username} - Não foi possível pegar o usuário')
     await log.enviar_log(context)
 
 
@@ -74,7 +74,7 @@ async def notificacao(update: Update, context: CallbackContext):
         return
 
     log.adicionar_log(f'notificacao - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                     f'{update.effective_chat.username} - Não foi possível pegar o usuário')
+                      f'{update.effective_chat.username} - Não foi possível pegar o usuário')
     await log.enviar_log(context)
 
 
@@ -105,7 +105,7 @@ async def horario(update: Update, context: CallbackContext):
     horarios = horario_funcionamento()
     if horario is None:
         log.adicionar_log(f'horario - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                         f'{update.effective_chat.username} - Não foi possível pegar o horario')
+                          f'{update.effective_chat.username} - Não foi possível pegar o horario')
         await log.enviar_log(context)
         return
 
@@ -129,6 +129,11 @@ async def instagram(update: Update, context: CallbackContext):
                           'Atualizações diárias no instagram: https://instagram.com/bandecounicamp')
 
 
+async def facebook(update: Update, context: CallbackContext):
+    await mandar_mensagem(context, update.effective_chat.id,
+                          'Atualizações diárias no facebook: https://facebook.com/bandecounicamp')
+
+
 async def desativar(update: Update, context: CallbackContext):
     dados = {"tradicional": 0, "vegano": 0, "cafe": 0, "almoco": 0, "jantar": 0, "telefone": 0}
     if firebase.atualizar_usuario(dados, update.effective_chat.id):
@@ -137,7 +142,7 @@ async def desativar(update: Update, context: CallbackContext):
         return
 
     log.adicionar_log(f'desativar - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                     f'{update.effective_chat.username} - Não foi possível zerar os dados do usuário')
+                      f'{update.effective_chat.username} - Não foi possível zerar os dados do usuário')
     await log.enviar_log(context)
 
 
@@ -162,6 +167,7 @@ Use o /rs para receber imagens das câmeras do RS.
 
 Use o /twitter para receber o link da página do Twitter.
 Use o /instagram para receber o link da página do Instagram.
+Use o /facebook para receber o link da página do Facebook.
 
 Use o /desativar para zerar seus dados cadastrados no bot.
 
@@ -178,12 +184,12 @@ async def mensagem_contato(update: Update, context: CallbackContext):
                 await mandar_mensagem(context, update.effective_chat.id, "Contato atualizado !")
             else:
                 log.adicionar_log(f'mensagemContato - {update.effective_chat.id} - {update.effective_chat.full_name} -'
-                                 f'{update.effective_chat.username} - Não foi possível atualizar o contato')
+                                  f'{update.effective_chat.username} - Não foi possível atualizar o contato')
                 await log.enviar_log(context)
             return
 
     log.adicionar_log(f'mensagemContato - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                     f'{update.effective_chat.username} - Não foi possível pegar o usuário')
+                      f'{update.effective_chat.username} - Não foi possível pegar o usuário')
     await log.enviar_log(context)
 
 
@@ -198,14 +204,14 @@ async def mensagem(update: Update, context: CallbackContext):
         if comida is None:
             await mandar_mensagem(context, update.effective_chat.id, "Algo deu errado !")
             log.adicionar_log(f'{update.message.text} - {update.effective_chat.id} - {update.effective_chat.full_name} '
-                             f'- {update.effective_chat.username} - Não foi possível consultar o cardápio')
+                              f'- {update.effective_chat.username} - Não foi possível consultar o cardápio')
             await log.enviar_log(context)
 
         else:
             dados = firebase.pegar_usuario(update.effective_chat.id)
             if not dados:
                 log.adicionar_log(f'mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                                 f'{update.effective_chat.username} - Não foi possível pegar o usuário')
+                                  f'{update.effective_chat.username} - Não foi possível pegar o usuário')
                 await log.enviar_log(context)
                 return
 
@@ -217,7 +223,7 @@ async def mensagem(update: Update, context: CallbackContext):
         dados = firebase.pegar_usuario(update.effective_chat.id)
         if not dados:
             log.adicionar_log(f'mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                             f'{update.effective_chat.username} - Não foi possível pegar o usuário')
+                              f'{update.effective_chat.username} - Não foi possível pegar o usuário')
             await log.enviar_log(context)
             return
 
@@ -234,7 +240,7 @@ async def mensagem(update: Update, context: CallbackContext):
 
         if not firebase.atualizar_usuario(dados, update.effective_chat.id):
             log.adicionar_log(f'mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-                             f'{update.effective_chat.username} - Não foi possível atualizar o usuário')
+                              f'{update.effective_chat.username} - Não foi possível atualizar o usuário')
             await log.enviar_log(context)
             return
 
