@@ -13,8 +13,9 @@ class Ngrok:
     httpd = None
 
     def iniciar_servidor(self, log):
-        if not (self.ngrok is None and self.httpd is None):
+        if self.ngrok is not None or self.httpd is not None:
             self.desligar_servidor(log)
+            time.sleep(2)
 
         try:
             porta = 8000
@@ -24,7 +25,7 @@ class Ngrok:
             thread.start()
             self.ngrok = subprocess.Popen([Path(Path().resolve(), "ngrok"), "http", str(porta)],
                                           stdout=subprocess.PIPE)
-            time.sleep(2)
+            time.sleep(4)
             resp = requests.get("http://localhost:4040/api/tunnels")
             public_url = resp.json()["tunnels"][0]["public_url"]
             return public_url
@@ -33,13 +34,23 @@ class Ngrok:
             log.adicionar_log(f'iniciar_servidor - {0} - Não foi possível iniciar servidor ngrok\n{error}')
 
     def desligar_servidor(self, log):
+        self.desligar_ngrok(log)
+        self.desligar_httpd(log)
+
+    def desligar_ngrok(self, log):
         try:
             self.ngrok.terminate()
             self.ngrok.kill()
+            self.ngrok = None
+
+        except Exception as error:
+            log.adicionar_log(f'desligar_ngrok - {0} - Não foi possível desligar servidor ngrok\n{error}')
+
+    def desligar_httpd(self, log):
+        try:
             self.httpd.shutdown()
             self.httpd.server_close()
-            self.ngrok = None
             self.httpd = None
 
         except Exception as error:
-            log.adicionar_log(f'desligar_servidor - {0} - Não foi possível desligar servidor ngrok\n{error}')
+            log.adicionar_log(f'desligar_httpd - {0} - Não foi possível desligar servidor ngrok\n{error}')
