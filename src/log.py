@@ -8,7 +8,8 @@ class Log:
 
     async def enviar_log(self, context):
         if self.__log__ != "":
-            await mandar_mensagem(context, self.__CHANNEL_ID__, self.__log__)
+            await mandar_mensagem(context, self.__CHANNEL_ID__, self.__log__, None, None,
+                                  "HTML")
         else:
             pass
         self.limpar_log()

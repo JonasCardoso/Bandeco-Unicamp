@@ -45,7 +45,7 @@ async def notificar_cardapio(context: CallbackContext):
                                        modalidade)
     await mensagem_cardapio_telegram('@bandecounicamp', context, cardapio, hoje)
     await mensagem_cardapio_twitter(context, cardapio, hoje)
-    await mensagem_cardapio_instagram(context, cardapio, hoje)
+    await mensagem_cardapio_meta(context, cardapio, hoje)
 
     for id_usuario, dados in usuarios.items():
         if dados[dados_periodo] == 1:
@@ -91,6 +91,6 @@ async def mensagem_cardapio_twitter(context, cardapio, dia):
         await twitter_servico.postar_tweet(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
 
 
-async def mensagem_cardapio_instagram(context, cardapio, dia):
+async def mensagem_cardapio_meta(context, cardapio, dia):
     for item, modalidade in cardapio:
-        await meta_servico.postar_insta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
+        await meta_servico.postar_meta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
