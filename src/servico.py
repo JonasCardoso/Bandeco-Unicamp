@@ -16,12 +16,6 @@ ngrok = ngrok_servico.Ngrok()
 
 
 async def notificar_cardapio(context: CallbackContext):
-    usuarios = firebase.pegar_todos_usuarios()
-    if not usuarios:
-        log.adicionar_log(f'notificarCardapio - {0} - Não foi possível pegar todos usuários')
-        await log.enviar_log(context)
-        return
-
     hoje = dt.datetime.today()
     comida = bandeco.comida(hoje.strftime('%Y-%m-%d'))
 
@@ -53,6 +47,12 @@ async def notificar_cardapio(context: CallbackContext):
 
     ngrok.desligar_servidor(log)
     await log.enviar_log(context)
+
+    usuarios = firebase.pegar_todos_usuarios()
+    if not usuarios:
+        log.adicionar_log(f'notificarCardapio - {0} - Não foi possível pegar todos usuários')
+        await log.enviar_log(context)
+        return
 
     for id_usuario, dados in usuarios.items():
         if dados[dados_periodo] == 1:
