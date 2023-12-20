@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from pathlib import Path
-
+from util import TOKEN_NGROK
 
 class Ngrok:
     ngrok = None
@@ -20,6 +20,7 @@ class Ngrok:
         try:
             porta = 8000
             handler = http.server.SimpleHTTPRequestHandler
+            subprocess.run(['ngrok', 'config', 'add-authtoken', TOKEN_NGROK], stdout=subprocess.PIPE)
             self.httpd = socketserver.TCPServer(("", porta), handler)
             thread = threading.Thread(target=self.httpd.serve_forever)
             thread.start()

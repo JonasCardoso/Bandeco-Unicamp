@@ -38,6 +38,7 @@ FACEBOOK_ACCESS_TOKEN = os.environ['FACEBOOK_ACCESS_TOKEN']
 INSTAGRAM_USER_ID = os.environ['INSTAGRAM_USER_ID']
 FACEBOOK_USER_ID = os.environ['FACEBOOK_USER_ID']
 GRAPH_URL = os.environ['GRAPH_URL']
+TOKEN_NGROK = os.environ['TOKEN_NGROK']
 
 PATH_FONTE_LATO_BOLD = 'src/fonte/Lato-Bold.ttf'
 PATH_FONTE_LATO_MEDIUM = 'src/fonte/Lato-Medium.ttf'
