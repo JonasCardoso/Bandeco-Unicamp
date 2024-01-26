@@ -89,7 +89,7 @@ def modalidade_com_cardapio(comida, dados, periodo):
 
 async def mensagem_cardapio_telegram(id_usuario, context, cardapio, dia):
     for item, modalidade in cardapio:
-        await telegram_servico.mandar_mensagem(context, id_usuario, f'* {modalidade} de {DIAS[dia.weekday()]} '
+        await telegram_servico.mandar_mensagem(context, id_usuario, f'*{modalidade} de {DIAS[dia.weekday()]}'
                                                                     f'* \n\n{item}')
 
 
