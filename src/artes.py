@@ -41,7 +41,7 @@ def pegar_identidade_visual(titulo_cardapio):
     if 'tradicional' in titulo_cardapio.lower():
         pasta = 'vermelho'
         return f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs', (0, 0, 0), (255, 255, 255), (174, 34, 37)
-    elif 'vegetariano' in titulo_cardapio.lower():
+    elif 'vegano' in titulo_cardapio.lower():
         pasta = 'amarelo'
         return f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs', (0, 0, 0), (0, 0, 0), (212, 115, 53)
     else:

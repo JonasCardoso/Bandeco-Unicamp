@@ -60,13 +60,13 @@ async def notificar_cardapio(context: CallbackContext):
             await mensagem_cardapio_telegram(id_usuario, context, cardapio, hoje)
 
 
-def modalidade_com_cardapio(comida, dados, periodo):
+def modalidade_com_cardapio(comida, dados, modalidade):
     cardapio = list()
 
-    if 'Café da manhã' == periodo:
+    if 'Café da manhã' == modalidade:
         cardapio.append([comida[4], MODALIDADES[4]])
 
-    elif 'Almoço' == periodo:
+    elif 'Almoço' == modalidade:
         if dados['tradicional'] == 1:
             cardapio.append([comida[0], MODALIDADES[0]])
         if dados['vegano'] == 1:
@@ -75,7 +75,7 @@ def modalidade_com_cardapio(comida, dados, periodo):
             cardapio.append([comida[0], MODALIDADES[0]])
             cardapio.append([comida[1], MODALIDADES[1]])
 
-    elif 'Jantar' == periodo:
+    elif 'Jantar' == modalidade:
         if dados['tradicional'] == 1:
             cardapio.append([comida[2], MODALIDADES[2]])
         if dados['vegano'] == 1:
