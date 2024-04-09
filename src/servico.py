@@ -89,15 +89,18 @@ def modalidade_com_cardapio(comida, dados, modalidade):
 
 async def mensagem_cardapio_telegram(id_usuario, context, cardapio, dia):
     for item, modalidade in cardapio:
-        await telegram_servico.mandar_mensagem(context, id_usuario, f'*{modalidade} de {DIAS[dia.weekday()]}'
-                                                                    f'* \n\n{item}')
+        if not(item == 'Refeição não cadastrada.' and id_usuario == '@bandecounicamp'):
+            await telegram_servico.mandar_mensagem(context, id_usuario, f'*{modalidade} de {DIAS[dia.weekday()]}'
+                                                                        f'* \n\n{item}')
 
 
 async def mensagem_cardapio_twitter(context, cardapio, dia):
     for item, modalidade in cardapio:
-        await twitter_servico.postar_tweet(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
+        if item != 'Refeição não cadastrada.':
+            await twitter_servico.postar_tweet(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log)
 
 
 async def mensagem_cardapio_meta(context, cardapio, dia, url):
     for item, modalidade in cardapio:
-        await meta_servico.postar_meta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log, url)
+        if item != 'Refeição não cadastrada.':
+            await meta_servico.postar_meta(context, f'{modalidade} de {DIAS[dia.weekday()]}', item, log, url)

@@ -39,6 +39,9 @@ def comida_site_prefeitura(data):
         cardapios = list()
 
         for i in base:
+            if 'Não há jantar' in i.text or 'Não há almoço' in i.text:
+                cardapios.append('Refeição não cadastrada.')
+                continue
             cardapio = ''
             i = i.find_all("div")
             cardapio += i[1].text.capitalize() + '\n'
@@ -68,11 +71,13 @@ def comida_site_json(data):
         if 'Server-unavailable!' in response.text or 'Acesso indevido' in response.text or response.status_code != 200:
             return None
 
-        cardapios = list()
-        chaves = ['PRATO_PRINCIPAL', 'ACOMPANHAMENTO', 'PTS', 'GUARNICAO', 'SALADA', 'SOBREMESA', 'SUCO', 'OBS']
+        cardapios = ['Refeição não cadastrada.'] * 4
+        chaves = ['PRATO_PRINCIPAL', 'ACOMPANHAMENTO', 'PTS', 'GUARNICAO', 'SALADA', 'SOBREMESA', 'BEBIDA', 'OBS']
+        refeicoes = ['Almoço', 'Almoço Vegano', 'Jantar', 'Jantar Vegano']
 
         for i in response.json()['CARDAPIO']:
             if i['DATA'] == data:
+                posicao = refeicoes.index(i['TIPO'])
                 cardapio = ''
                 for chave in chaves:
                     if i[chave] == '-' or 'não informado' in i[chave]:
@@ -80,7 +85,7 @@ def comida_site_json(data):
                     frase = i[chave].replace('\r', '')
                     if chave == chaves[-1]:
                         cardapio += '\n' + 'Observações:\n'
-                        frases = frase.replace('<FONT COLOR =\"RED\">', '\n').split('\n')
+                        frases = frase.replace('<FONT COLOR =\"RED\">', '\n').replace('</b>', '').replace('<b>', '').split('\n')
                         for frase in frases:
                             if frase == frases[-1]:
                                 cardapio += '\n'
@@ -88,7 +93,7 @@ def comida_site_json(data):
                                 cardapio += frase.capitalize() + '\n'
                     else:
                         cardapio += frase.capitalize() + '\n'
-                cardapios.append(cardapio)
+                cardapios[posicao] = cardapio
 
         if len(cardapios) == 0:
             return None
