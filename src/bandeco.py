@@ -8,7 +8,7 @@ def comida(data):
     if cardapios is None:
         cardapios = comida_site_json(data)
     if cardapios is not None:
-        siglas = ['ru', 'ra', 'rs', 'hc', 'pts']
+        siglas = ['ru', 'ra', 'rs', 'hc', 'pts', 'caism']
         for id, cardapio in enumerate(cardapios):
             cardapios[id] = abreviacoes(siglas, cardapio)
         return cardapios
