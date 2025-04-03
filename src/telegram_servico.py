@@ -27,9 +27,10 @@ async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, butt
         None
 
 
-async def mandar_imagem(context: CallbackContext, chat_id, imagem):
+async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_message_id=None):
     try:
         await context.bot.send_photo(chat_id=chat_id, parse_mode="Markdown",
-                                     photo=open(f'{pathlib.Path().resolve()}/{imagem}.jpg', 'rb'))
+                                     photo=open(f'{pathlib.Path().resolve()}/{imagem}.jpg', 'rb'),
+                                     reply_to_message_id=reply_to_message_id)
     except:
         None

@@ -6,7 +6,7 @@ import time
 
 from telegram.ext import CommandHandler, filters, MessageHandler, Application
 from comando import start, cafe, almoco, jantar, modalidade, notificacao, saldo, ru, ra, rs, horario, ajuda, mensagem, \
-    contato, twitter, instagram, facebook, desativar, mensagem_contato
+    contato, twitter, instagram, facebook, desativar, mensagem_contato, tabela
 from servico import notificar_cardapio
 from util import HORARIO_CAFE, HORARIO_ALMOCO, HORARIO_JANTAR, TOKEN_BOT_TELEGRAM
 
@@ -42,6 +42,7 @@ def main():
     application.add_handler(CommandHandler('ru', ru))
     application.add_handler(CommandHandler('ra', ra))
     application.add_handler(CommandHandler('rs', rs))
+    application.add_handler(CommandHandler('tabela', tabela))
     application.add_handler(CommandHandler('twitter', twitter))
     application.add_handler(CommandHandler('instagram', instagram))
     application.add_handler(CommandHandler('facebook', facebook))

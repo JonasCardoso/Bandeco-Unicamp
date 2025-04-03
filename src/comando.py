@@ -7,6 +7,7 @@ import bandeco
 import cam as cm
 import datetime as dt
 import log as lg
+from tabela import gerar_tabela_nutricional
 from horario import horario_funcionamento
 from saldo import saldo_bandeco
 from servico import modalidade_com_cardapio, mensagem_cardapio_telegram, firebase
@@ -85,6 +86,20 @@ async def saldo(update: Update, context: CallbackContext):
                           reply_markup=ForceReply())
 
 
+async def tabela(update: Update, context: CallbackContext):
+    if update.message.reply_to_message is not None and \
+            'bandecounicamp_bot' == update.message.reply_to_message["from_user"]["username"]:
+        message = update.message.reply_to_message.text
+        if message is not None and any(word in message for word in ["Almoço", "Jantar", "Café da manhã"]):
+            imagem = gerar_tabela_nutricional(update.message.reply_to_message.text)
+            if imagem is not None:
+                await mandar_imagem(context, update.effective_chat.id, imagem, update.message.reply_to_message.message_id)
+            return
+    await mandar_mensagem(context, update.effective_chat.id,'Use o comando /tabela respondendo a uma mensagem do '
+                                                            'cardápio.')
+    await log.enviar_log(context)
+
+
 async def ru(update: Update, context: CallbackContext):
     cam.pegar_imagem('ru')
     await mandar_imagem(context, update.effective_chat.id, CAM_RU_A)
@@ -160,6 +175,7 @@ Use o /modalidade para definir entre a modalidade de cardápio vegano e/ou tradi
 Use o /notificacao para escolher quais cardápios serão notificados.
 Use o /horario para saber o horário de funcionamento dos restaurantes.
 Use o /saldo para consultar o saldo no cartão universitário.
+Use o /tabela para consultar a tabela nutricional não oficial do cardápio.
 
 Use o /ru para receber imagens das câmeras do RU.
 Use o /ra para receber imagens das câmeras do RA.
