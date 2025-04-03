@@ -5,14 +5,22 @@ from bs4 import BeautifulSoup
 
 def horario_funcionamento():
     try:
-        horarios = ''
+        horarios = None
         response = req.get(URL_HORARIO)
         soup = BeautifulSoup(response.text, 'html.parser')
-        base = soup.find_all("div", {"class": "entry-content clearfix"})
-        base = str(base[0].text).split('Horário de funcionamento do ')[1:]
-        for i in base:
-            horarios += i.split('Cardápio')[0].strip().replace('*', '') + '\n\n'
-        return horarios
+
+        h5_element = soup.find(id="qual-o-horario-de-funcionamento-e-endereco-dos-restaurantes")
+
+        if h5_element:
+            faq_container = h5_element.find_parent('div', class_='block-faq')
+            if faq_container:
+                answer_div = faq_container.find('div', class_='block-faq__faq-answer')
+                if answer_div:
+                    list_items = answer_div.find_all('li')
+                    horarios = '\n'.join([li.get_text(strip=True, separator=' ').replace('*','').replace('  .','.\n') for li in list_items[:3]])
+        if  horarios is not None:
+            print(horarios)
+            return horarios
 
     except:
         return None
