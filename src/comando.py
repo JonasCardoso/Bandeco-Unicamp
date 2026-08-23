@@ -1,21 +1,48 @@
+"""Handlers de comandos do bot Telegram.
+
+Este módulo contém todos os handlers para comandos (/start, /cafe, /almoco, etc.)
+e mensagens de texto livres do bot Bandeco Unicamp.
+"""
+
+import datetime as dt
 from datetime import timedelta
 
-from telegram import Update, ForceReply
+from telegram import ForceReply, Update
 from telegram.ext import CallbackContext
 
-import bandeco
-import cam as cm
-import datetime as dt
-import log as lg
+from bandeco import comida
+from cam import Cam
+from cardapio import modalidade_com_cardapio
 from horario import horario_funcionamento
+from log import Log
 from saldo import saldo_bandeco
-from servico import modalidade_com_cardapio, mensagem_cardapio_telegram, firebase
-from teclado import teclado_dias_semana, teclado_modalidades, teclado_notificacao, teclado_contato
-from telegram_servico import mandar_mensagem, mandar_imagem, mandar_mensagem_teclado, deletar_mensagem
-from util import DIAS, CAM_RU_A, CAM_RU_B, CAM_RA, CAM_RS
+from servico import firebase, mensagem_cardapio_telegram
+from tabela import gerar_tabela_nutricional
+from teclado import (
+    teclado_contato,
+    teclado_dias_semana,
+    teclado_modalidades,
+    teclado_notificacao,
+)
+from telegram_servico import (
+    deletar_mensagem,
+    mandar_imagem,
+    mandar_mensagem,
+    mandar_mensagem_teclado,
+)
+from util import (
+    DIAS,
+    get_cam_ra,
+    get_cam_rs,
+    get_cam_ru_a,
+    get_cam_ru_b,
+    rate_limiter_cardapio,
+    rate_limiter_saldo,
+)
+from validacao import validar_saldo_entrada
 
-log = lg.Log()
-cam = cm.Cam()
+log = Log()
+cam = Cam()
 
 
 async def start(update: Update, context: CallbackContext):
@@ -85,25 +112,39 @@ async def saldo(update: Update, context: CallbackContext):
                           reply_markup=ForceReply())
 
 
+async def tabela(update: Update, context: CallbackContext):
+    if update.message.reply_to_message is not None and \
+            'bandecounicamp_bot' == update.message.reply_to_message["from_user"]["username"]:
+        message = update.message.reply_to_message.text
+        if message is not None and any(word in message for word in ["Almoço", "Jantar", "Café da manhã"]):
+            imagem = gerar_tabela_nutricional(update.message.reply_to_message.text)
+            if imagem is not None:
+                await mandar_imagem(context, update.effective_chat.id, imagem, update.message.reply_to_message.message_id)
+            return
+    await mandar_mensagem(context, update.effective_chat.id,'Use o comando /tabela respondendo a uma mensagem do '
+                                                            'cardápio.')
+    await log.enviar_log(context)
+
+
 async def ru(update: Update, context: CallbackContext):
     cam.pegar_imagem('ru')
-    await mandar_imagem(context, update.effective_chat.id, CAM_RU_A)
-    await mandar_imagem(context, update.effective_chat.id, CAM_RU_B)
+    await mandar_imagem(context, update.effective_chat.id, get_cam_ru_a())
+    await mandar_imagem(context, update.effective_chat.id, get_cam_ru_b())
 
 
 async def ra(update: Update, context: CallbackContext):
     cam.pegar_imagem('ra')
-    await mandar_imagem(context, update.effective_chat.id, CAM_RA)
+    await mandar_imagem(context, update.effective_chat.id, get_cam_ra())
 
 
 async def rs(update: Update, context: CallbackContext):
     cam.pegar_imagem('rs')
-    await mandar_imagem(context, update.effective_chat.id, CAM_RS)
+    await mandar_imagem(context, update.effective_chat.id, get_cam_rs())
 
 
 async def horario(update: Update, context: CallbackContext):
     horarios = horario_funcionamento()
-    if horario is None:
+    if horarios is None:
         log.adicionar_log(f'horario - {update.effective_chat.id} - {update.effective_chat.full_name} - '
                           f'{update.effective_chat.username} - Não foi possível pegar o horario')
         await log.enviar_log(context)
@@ -135,14 +176,54 @@ async def facebook(update: Update, context: CallbackContext):
 
 
 async def desativar(update: Update, context: CallbackContext):
+    """Zera TODOS os dados do usuário (modalidade + notificações + telefone)."""
     dados = {"tradicional": 0, "vegano": 0, "cafe": 0, "almoco": 0, "jantar": 0, "telefone": 0}
     if firebase.atualizar_usuario(dados, update.effective_chat.id):
         await mandar_mensagem(context, update.effective_chat.id,
-                              'Olá Unicamper, seus dados da modalidade, notificação e telefone foram zerados!!!')
+                              'Olá Unicamper, TODOS os seus dados foram zerados!!!')
         return
 
     log.adicionar_log(f'desativar - {update.effective_chat.id} - {update.effective_chat.full_name} - '
                       f'{update.effective_chat.username} - Não foi possível zerar os dados do usuário')
+    await log.enviar_log(context)
+
+
+async def reset_modalidade(update: Update, context: CallbackContext):
+    """Zera apenas as preferências de modalidade (tradicional/vegano)."""
+    dados = {"tradicional": 0, "vegano": 0}
+    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+        await mandar_mensagem(context, update.effective_chat.id,
+                              'Suas preferências de modalidade foram zeradas!!!')
+        return
+
+    log.adicionar_log(f'reset_modalidade - {update.effective_chat.id} - {update.effective_chat.full_name} - '
+                      f'{update.effective_chat.username} - Não foi possível zerar a modalidade')
+    await log.enviar_log(context)
+
+
+async def reset_notificacao(update: Update, context: CallbackContext):
+    """Zera apenas as preferências de notificação (cafe/almoço/jantar)."""
+    dados = {"cafe": 0, "almoco": 0, "jantar": 0}
+    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+        await mandar_mensagem(context, update.effective_chat.id,
+                              'Suas notificações foram desativadas!!!')
+        return
+
+    log.adicionar_log(f'reset_notificacao - {update.effective_chat.id} - {update.effective_chat.full_name} - '
+                      f'{update.effective_chat.username} - Não foi possível zerar as notificações')
+    await log.enviar_log(context)
+
+
+async def reset_telefone(update: Update, context: CallbackContext):
+    """Zera apenas o telefone cadastrado."""
+    dados = {"telefone": 0}
+    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+        await mandar_mensagem(context, update.effective_chat.id,
+                              'Seu telefone foi removido!!!')
+        return
+
+    log.adicionar_log(f'reset_telefone - {update.effective_chat.id} - {update.effective_chat.full_name} - '
+                      f'{update.effective_chat.username} - Não foi possível zerar o telefone')
     await log.enviar_log(context)
 
 
@@ -160,6 +241,7 @@ Use o /modalidade para definir entre a modalidade de cardápio vegano e/ou tradi
 Use o /notificacao para escolher quais cardápios serão notificados.
 Use o /horario para saber o horário de funcionamento dos restaurantes.
 Use o /saldo para consultar o saldo no cartão universitário.
+Use o /tabela para consultar a tabela nutricional não oficial do cardápio.
 
 Use o /ru para receber imagens das câmeras do RU.
 Use o /ra para receber imagens das câmeras do RA.
@@ -169,7 +251,12 @@ Use o /twitter para receber o link da página do Twitter.
 Use o /instagram para receber o link da página do Instagram.
 Use o /facebook para receber o link da página do Facebook.
 
-Use o /desativar para zerar seus dados cadastrados no bot.
+Use o /desativar para zerar TODOS os seus dados cadastrados no bot.
+
+Comandos de reset granular:
+Use o /reset-modalidade para zerar apenas suas preferências de modalidade (tradicional/vegano).
+Use o /reset-notificacao para desativar apenas as notificações diárias.
+Use o /reset-telefone para remover seu telefone cadastrado.
 
 By @JonasCardoso''')
     await mandar_mensagem(context, update.effective_chat.id, texto)
@@ -197,11 +284,21 @@ async def mensagem(update: Update, context: CallbackContext):
     hoje = dt.datetime.today()
 
     if len(update.message.text.split('de')) > 1 and (update.message.text.split('de')[1].strip() in DIAS):
+        # Rate limiting para consultas de cardápio
+        if not rate_limiter_cardapio.is_allowed(str(update.effective_chat.id)):
+            await mandar_mensagem(
+                context, update.effective_chat.id,
+                "⚠️ *Aguarde um momento!*\n\n"
+                "Você atingiu o limite de consultas. Tente novamente em breve.",
+                parse_mode="Markdown",
+            )
+            return
+
         dia = hoje - timedelta(days=hoje.weekday() - DIAS.index(update.message.text.split('de')[1].strip()))
         data = dia.strftime('%Y-%m-%d')
-        comida = bandeco.comida(data)
+        comida_resultado = comida(data)
 
-        if comida is None:
+        if comida_resultado is None:
             await mandar_mensagem(context, update.effective_chat.id, "Algo deu errado !")
             log.adicionar_log(f'{update.message.text} - {update.effective_chat.id} - {update.effective_chat.full_name} '
                               f'- {update.effective_chat.username} - Não foi possível consultar o cardápio')
@@ -252,6 +349,27 @@ async def mensagem(update: Update, context: CallbackContext):
     elif len(update.message.text.split()) == 2 and update.message.text.split()[0].isnumeric():
         ra_numero = update.message.text.split()[0]
         senha = update.message.text.split()[1]
+
+        # Rate limiting para consultas de saldo
+        if not rate_limiter_saldo.is_allowed(str(update.effective_chat.id)):
+            await mandar_mensagem(
+                context, update.effective_chat.id,
+                "⚠️ *Aguarde um momento!*\n\n"
+                "Você atingiu o limite de consultas. Tente novamente em breve.",
+                parse_mode="Markdown",
+            )
+            return
+
+        # Validação de entrada para RA e senha
+        if not validar_saldo_entrada(ra_numero, senha):
+            await mandar_mensagem(context, update.effective_chat.id,
+                                  "⚠️ *Formato inválido!*\n\n"
+                                  "Use: `<ra> <senha>`\n\n"
+                                  "Exemplo: `123456 abc123`\n\n"
+                                  "(onde RA é numérico e senha não deve conter espaços)",
+                                  parse_mode="Markdown")
+            return
+
         await deletar_mensagem(context, update.effective_chat.id, update.message.message_id)
 
         valor = await saldo_bandeco(update, context, ra_numero, senha, log)

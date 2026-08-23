@@ -9,9 +9,39 @@ myapp/
 __pycache__/
 .idea/
 production.ini
+nul 
+
+# Environment variables (SENSITIVE - NEVER commit)
+.env
+.env.local
+.env.*.local
+
+# Firebase & cloud credentials
 firebase.json
 insta.json
 google.json
+
+# Generated images
 img_obs_post_1.jpg
 img_cardapio_post_0.jpg
-.env
+tabela_temporaria.jpg
+cache_tabela_nutricional.json
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

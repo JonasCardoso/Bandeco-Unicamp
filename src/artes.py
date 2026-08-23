@@ -1,5 +1,12 @@
+"""Geração de imagens para postagem em redes sociais.
+
+Este módulo fornece funções para gerar imagens de cardápios e observações
+com identidade visual personalizada, usando PIL/Pillow para manipulação de imagens.
+"""
+
 import datetime as dt
 import textwrap
+from typing import List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -8,7 +15,17 @@ from util import PATH_FONTE_LATO_BOLD, PATH_FONTE_LATO_MEDIUM
 IMG_SIZE = 1080
 
 
-def gerar_titulo(titulo_cardapio, nome_imagem, cor_texto2):
+def gerar_titulo(titulo_cardapio: str, nome_imagem: str, cor_texto2: Tuple[int, ...]) -> Image.Image:
+    """Gera imagem com título do cardápio.
+
+    Args:
+        titulo_cardapio: Título a ser exibido.
+        nome_imagem: Nome base da imagem de fundo (sem extensão).
+        cor_texto2: Cor RGB do texto.
+
+    Returns:
+        Objeto Image com o título renderizado.
+    """
     img = Image.open(f'{nome_imagem}.jpg')
     img_draw = ImageDraw.Draw(img)
     fonte_titulo = ImageFont.truetype(PATH_FONTE_LATO_BOLD, 50)
@@ -25,7 +42,16 @@ def gerar_titulo(titulo_cardapio, nome_imagem, cor_texto2):
     return img
 
 
-def gerar_data(img, cor_texto2):
+def gerar_data(img: Image.Image, cor_texto2: Tuple[int, ...]) -> Image.Image:
+    """Adiciona a data atual na imagem.
+
+    Args:
+        img: Objeto Image de fundo.
+        cor_texto2: Cor RGB do texto.
+
+    Returns:
+        Objeto Image com a data renderizada.
+    """
     img_draw = ImageDraw.Draw(img)
     fonte_titulo = ImageFont.truetype(PATH_FONTE_LATO_BOLD, 40)
     hoje = dt.datetime.today()
@@ -33,23 +59,50 @@ def gerar_data(img, cor_texto2):
     altura_i = 972
     w, h = (fonte_titulo.getsize(data))
     img_draw.text(((img.size[0] - w) / 2, altura_i), data, font=fonte_titulo, fill=cor_texto2)
-
     return img
 
 
-def pegar_identidade_visual(titulo_cardapio):
+def pegar_identidade_visual(titulo_cardapio: str) -> Tuple[str, str, Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]:
+    """Retorna configurações de identidade visual com base no tipo de cardápio.
+
+    Args:
+        titulo_cardapio: Título do cardápio para determinar o tema.
+
+    Returns:
+        Tupla com (nome_imagem_cardapio, nome_imagem_obs,
+                   cor_texto1, cor_texto2, cor_auxiliar).
+    """
     if 'tradicional' in titulo_cardapio.lower():
         pasta = 'vermelho'
-        return f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs', (0, 0, 0), (255, 255, 255), (174, 34, 37)
+        return (
+            f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs',
+            (0, 0, 0), (255, 255, 255), (174, 34, 37)
+        )
     elif 'vegano' in titulo_cardapio.lower():
         pasta = 'amarelo'
-        return f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs', (0, 0, 0), (0, 0, 0), (212, 115, 53)
+        return (
+            f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs',
+            (0, 0, 0), (0, 0, 0), (212, 115, 53)
+        )
     else:
         pasta = 'verde'
-        return f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs', (0, 0, 0), (255, 255, 255), (0, 128, 54)
+        return (
+            f'src/{pasta}/img_cardapio', f'src/{pasta}/img_obs',
+            (0, 0, 0), (255, 255, 255), (0, 128, 54)
+        )
 
 
-def gerar_imagem_postagem(titulo_cardapio, texto_cardapio, log):
+def gerar_imagem_postagem(titulo_cardapio: str, texto_cardapio: str, log) -> Optional[List[str]]:
+    """Gera imagens de postagem para cardápio e observações.
+
+    Args:
+        titulo_cardapio: Título do cardápio.
+        texto_cardapio: Texto completo do cardápio (pode conter 'Observações:')
+        log: Instância de Log para registro de erros.
+
+    Returns:
+        Lista de nomes de arquivos gerados ou None em caso de erro.
+    """
     try:
         textos_cardapio = texto_cardapio.split('Observações:')
         lista_posts = list()
@@ -68,7 +121,27 @@ def gerar_imagem_postagem(titulo_cardapio, texto_cardapio, log):
         return None
 
 
-def gerar_imagem_cardapio(titulo_cardapio, texto_cardapio, nome_imagem, cor_texto1, cor_texto2, cor_auxiliar):
+def gerar_imagem_cardapio(
+    titulo_cardapio: str,
+    texto_cardapio: str,
+    nome_imagem: str,
+    cor_texto1: Tuple[int, ...],
+    cor_texto2: Tuple[int, ...],
+    cor_auxiliar: Tuple[int, ...],
+) -> str:
+    """Gera imagem do cardápio com formatação.
+
+    Args:
+        titulo_cardapio: Título do cardápio.
+        texto_cardapio: Texto do cardápio.
+        nome_imagem: Nome base da imagem de fundo (sem extensão).
+        cor_texto1: Cor RGB do texto principal.
+        cor_texto2: Cor RGB do título/data.
+        cor_auxiliar: Cor RGB dos elementos decorativos.
+
+    Returns:
+        Nome do arquivo gerado (sem extensão).
+    """
     img = gerar_titulo(titulo_cardapio, nome_imagem, cor_texto2)
     img = gerar_data(img, cor_texto2)
     textos = texto_cardapio.split('\n')
@@ -111,11 +184,28 @@ def gerar_imagem_cardapio(titulo_cardapio, texto_cardapio, nome_imagem, cor_text
 
     name = f'{nome_imagem}_post_0.jpg'
     img.save(name)
-
     return name
 
 
-def gerar_imagem_obs(titulo_cardapio, texto_cardapio, nome_imagem, cor_texto1, cor_texto2):
+def gerar_imagem_obs(
+    titulo_cardapio: str,
+    texto_cardapio: str,
+    nome_imagem: str,
+    cor_texto1: Tuple[int, ...],
+    cor_texto2: Tuple[int, ...],
+) -> str:
+    """Gera imagem de observações com formatação.
+
+    Args:
+        titulo_cardapio: Título do cardápio.
+        texto_cardapio: Texto das observações.
+        nome_imagem: Nome base da imagem de fundo (sem extensão).
+        cor_texto1: Cor RGB do texto principal.
+        cor_texto2: Cor RGB do título/data.
+
+    Returns:
+        Nome do arquivo gerado (sem extensão).
+    """
     img = gerar_titulo(titulo_cardapio, nome_imagem, cor_texto2)
     img = gerar_data(img, cor_texto2)
     textos = texto_cardapio.split('\n')
@@ -137,5 +227,4 @@ def gerar_imagem_obs(titulo_cardapio, texto_cardapio, nome_imagem, cor_texto1, c
 
     name = f'{nome_imagem}_post_1.jpg'
     img.save(name)
-
     return name

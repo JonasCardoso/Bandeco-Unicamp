@@ -1,9 +1,29 @@
+"""Consulta de cardápios do Bandeco Unicamp.
+
+Este módulo fornece funções para consultar os cardápios diários
+dos restaurantes universitários através da prefeitura e API JSON.
+"""
+
+from typing import List, Optional
+
 import requests as req
-from util import URL_BANDECO_PREFEITURA, URL_BANDECO_JSON
 from bs4 import BeautifulSoup
 
+from util import get_url_bandeco_json, get_url_bandeco_prefeitura, retry
 
-def comida(data):
+
+def comida(data: str) -> Optional[List[str]]:
+    """Recupera o cardápio para uma data específica.
+
+    Tenta primeiro pela página da prefeitura e, se falhar,
+    tenta a API JSON.
+
+    Args:
+        data: Data no formato 'YYYY-MM-DD'.
+
+    Returns:
+        Lista de strings com os cardápios ou None em caso de erro.
+    """
     cardapios = comida_site_prefeitura(data)
     if cardapios is None:
         cardapios = comida_site_json(data)
@@ -12,11 +32,19 @@ def comida(data):
         for id, cardapio in enumerate(cardapios):
             cardapios[id] = abreviacoes(siglas, cardapio)
         return cardapios
-
     return None
 
 
-def abreviacoes(siglas, cardapio):
+def abreviacoes(siglas: List[str], cardapio: str) -> str:
+    """Substitui nomes longos de restaurantes por suas siglas.
+
+    Args:
+        siglas: Lista de siglas dos restaurantes.
+        cardapio: Texto do cardápio original.
+
+    Returns:
+        Cardápio com as abreviações aplicadas.
+    """
     for sigla in siglas:
         indices = [i for i in range(len(cardapio)) if cardapio.startswith(sigla, i)]
         for indice in indices:
@@ -27,9 +55,18 @@ def abreviacoes(siglas, cardapio):
     return cardapio
 
 
-def comida_site_prefeitura(data):
+@retry(max_attempts=3, delay=1.0, exceptions=req.RequestException)
+def comida_site_prefeitura(data: str) -> Optional[List[str]]:
+    """Consulta o cardápio na página da prefeitura.
+
+    Args:
+        data: Data no formato 'YYYY-MM-DD'.
+
+    Returns:
+        Lista de strings com os cardápios ou None em caso de erro.
+    """
     try:
-        response = req.get(URL_BANDECO_PREFEITURA + data, timeout=5)
+        response = req.get(get_url_bandeco_prefeitura() + data, timeout=5)
 
         if 'Não existe cardápio cadastrado no momento !' in response.text or response.status_code != 200:
             return None
@@ -61,13 +98,23 @@ def comida_site_prefeitura(data):
 
         return cardapios
 
-    except:
+    except req.RequestException as e:
+        print(f"[ERROR] Erro ao consultar cardápio da prefeitura ({data}): {e}")
         return None
 
 
-def comida_site_json(data):
+@retry(max_attempts=3, delay=1.0, exceptions=req.RequestException)
+def comida_site_json(data: str) -> Optional[List[str]]:
+    """Consulta o cardápio na API JSON do Bandeco.
+
+    Args:
+        data: Data no formato 'YYYY-MM-DD'.
+
+    Returns:
+        Lista de strings com os cardápios ou None em caso de erro.
+    """
     try:
-        response = req.post(URL_BANDECO_JSON, timeout=5)
+        response = req.post(get_url_bandeco_json(), timeout=5)
         if 'Server-unavailable!' in response.text or 'Acesso indevido' in response.text or response.status_code != 200:
             return None
 
@@ -95,12 +142,11 @@ def comida_site_json(data):
                         cardapio += frase.capitalize() + '\n'
                 cardapios[posicao] = cardapio
 
-        if len(cardapios) == 0:
-            return None
-
-        cafe = 'Café com leite\nPão\nMargarina\nGeleia\nFruta\n\n'
+        cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
         cardapios.append(cafe)
 
         return cardapios
-    except:
+
+    except req.RequestException as e:
+        print(f"[ERROR] Erro ao consultar cardápio JSON ({data}): {e}")
         return None
