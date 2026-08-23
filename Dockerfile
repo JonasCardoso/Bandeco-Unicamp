@@ -2,11 +2,11 @@
 # Bandeco-Unicamp Bot — Dockerfile otimizado
 # =============================================================================
 
-FROM python:3.10-slim AS base
+FROM python:3.11-slim AS base
 
 # Instala dependências do sistema necessárias para opencv
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # =============================================================================
 # Camada 2: Código fonte
 # =============================================================================
-COPY . .
+COPY src/ ./src/
+COPY ngrok ./ngrok
 
 # Torna o ngrok executável (binário pré-compilado)
 RUN chmod +x ngrok

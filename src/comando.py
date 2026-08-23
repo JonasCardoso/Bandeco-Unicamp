@@ -254,9 +254,9 @@ Use o /facebook para receber o link da página do Facebook.
 Use o /desativar para zerar TODOS os seus dados cadastrados no bot.
 
 Comandos de reset granular:
-Use o /reset-modalidade para zerar apenas suas preferências de modalidade (tradicional/vegano).
-Use o /reset-notificacao para desativar apenas as notificações diárias.
-Use o /reset-telefone para remover seu telefone cadastrado.
+Use o /reset_modalidade para zerar apenas suas preferências de modalidade (tradicional/vegano).
+Use o /reset_notificacao para desativar apenas as notificações diárias.
+Use o /reset_telefone para remover seu telefone cadastrado.
 
 By @JonasCardoso''')
     await mandar_mensagem(context, update.effective_chat.id, texto)

@@ -1,0 +1,8 @@
+services:
+  bandeco:
+    image: ghcr.io/jonascardoso/bandeco-unicamp:develop
+    container_name: bandeco-unicamp-develop
+    ports:
+      - "5001:5000"
+    env_file:
+      - .env

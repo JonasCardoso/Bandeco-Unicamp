@@ -1,8 +1,8 @@
-version: "3.7"
-
 services:
   bandeco:
-    build:
-      context: ./
+    image: ghcr.io/jonascardoso/bandeco-unicamp:latest
+    container_name: bandeco-unicamp-main
     ports:
-      - 5000:5000
+      - "5000:5000"
+    env_file:
+      - .env

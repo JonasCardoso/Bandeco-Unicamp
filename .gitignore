@@ -13,6 +13,7 @@ nul
 
 # Environment variables (SENSITIVE - NEVER commit)
 .env
+.env.develop
 .env.local
 .env.*.local
 

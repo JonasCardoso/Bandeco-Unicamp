@@ -21,6 +21,8 @@ from telegram_servico import mandar_mensagem
 from twitter_servico import postar_tweet
 from util import DIAS, get_horario_almoco, get_horario_cafe, get_horario_jantar
 
+firebase = FirebaseConfig()
+
 
 async def notificar_cardapio(context: CallbackContext) -> None:
     """Notifica todos os usuários sobre o cardápio do dia.
@@ -32,7 +34,6 @@ async def notificar_cardapio(context: CallbackContext) -> None:
         context: Contexto do bot Telegram.
     """
     log = Log()
-    firebase = FirebaseConfig()
     ngrok = Ngrok()
 
     hoje = dt.datetime.today()
