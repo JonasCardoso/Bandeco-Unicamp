@@ -1,10 +1,67 @@
-import pandas as pd
+"""Geração de tabelas nutricionais com IA.
+
+Este módulo fornece funções para gerar imagens de tabelas nutricionais
+baseadas em cardápios, utilizando a API Groq (LLM) para estimar valores
+nutricionais dos alimentos.
+"""
+
+import json
+import os
+from datetime import datetime, timedelta
+
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
 from groq import Groq
 from PIL import Image, ImageOps
-from util import GROQ_ACCESS_TOKEN
+
+from util import get_groq_access_token
+
+# =============================================================================
+# Cache para tabela nutricional (TTL: 24 horas)
+# =============================================================================
+
+CACHE_TABELA_ARQUIVO = "cache_tabela_nutricional.json"
+CACHE_TABELA_TTL_HOURS = 24
+
+
+def _carregar_cache_tabela() -> dict | None:
+    """Carrega o cache da tabela nutricional se ainda for válido."""
+    if not os.path.exists(CACHE_TABELA_ARQUIVO):
+        return None
+
+    try:
+        with open(CACHE_TABELA_ARQUIVO, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+
+        timestamp = datetime.fromisoformat(dados["timestamp"])
+        if datetime.now() - timestamp > timedelta(hours=CACHE_TABELA_TTL_HOURS):
+            # Cache expirado — remove o arquivo
+            os.remove(CACHE_TABELA_ARQUIVO)
+            return None
+
+        return dados.get("dados")
+
+    except (json.JSONDecodeError, KeyError, ValueError):
+        # Arquivo corrompido — remove e tenta regenerar
+        if os.path.exists(CACHE_TABELA_ARQUIVO):
+            os.remove(CACHE_TABELA_ARQUIVO)
+        return None
+
+
+def _salvar_cache_tabela(dados: list) -> None:
+    """Salva os dados da tabela no cache com timestamp atual."""
+    try:
+        conteudo = {
+            "timestamp": datetime.now().isoformat(),
+            "dados": dados,
+        }
+        with open(CACHE_TABELA_ARQUIVO, "w", encoding="utf-8") as f:
+            json.dump(conteudo, f, ensure_ascii=False)
+    except OSError:
+        # Falha ao salvar cache — não impede a geração da tabela
+        pass
+
 
 
 def filtrar_csv(dados_csv):
@@ -13,6 +70,10 @@ def filtrar_csv(dados_csv):
     linhas = dados_csv.split("\n")
     dados = [linha.split(";") for linha in linhas]
     dados_filtrados = [linha for linha in dados if len(linha) == 8]
+
+    # Retorna None se não há dados válidos
+    if not dados_filtrados:
+        return None
 
     if 'Nome' not in dados_filtrados[0][0]:
         dados_filtrados.insert(0, colunas)
@@ -36,8 +97,13 @@ def filtrar_csv(dados_csv):
 
 
 def gerar_tabela_nutricional(cardapio):
+    # Verifica se existe cache válido antes de chamar o LLM
+    cache = _carregar_cache_tabela()
+    if cache is not None:
+        return _gerar_imagem_tabela(cache)
+
     prompt = ('''
-     Faça uma tabela nutricional seguindo as diretrizes da ANVISA para tabela nutricionais e 
+     Faça uma tabela nutricional seguindo as diretrizes da ANVISA para tabela nutricionais e
      retorne os itens separados por ';' no formato CSV.
      Faça com os seguintes campos:
 
@@ -59,9 +125,9 @@ def gerar_tabela_nutricional(cardapio):
      Refresco de pêssego;250ml;120;30;0;0;0;16"
 
      Para esse cardápio abaixo:
-     "Jantar Tradicional de Terça-feira 
+     "Jantar Tradicional de Terça-feira
 
-     Cubos suínos ao molho de limão 
+     Cubos suínos ao molho de limão
      Arroz e feijão
      Batata assada com alecrim
      Salada de couve
@@ -83,7 +149,7 @@ def gerar_tabela_nutricional(cardapio):
     dados = None
 
     for i in range(5):
-        cliente = Groq(api_key=GROQ_ACCESS_TOKEN)
+        cliente = Groq(api_key=get_groq_access_token())
         resposta = cliente.chat.completions.create(
             messages=[
                 {"role": "user", "content": prompt}
@@ -93,10 +159,17 @@ def gerar_tabela_nutricional(cardapio):
         dados = filtrar_csv(resposta.choices[0].message.content)
 
         if dados is not None:
+            # Salva no cache para próximas consultas
+            _salvar_cache_tabela(dados)
             break
         if i == 4:
             return None
 
+    return _gerar_imagem_tabela(dados)
+
+
+def _gerar_imagem_tabela(dados):
+    """Gera a imagem da tabela a partir dos dados já processados."""
     fig, ax = plt.subplots(figsize=(12, 6))
     tabela = ax.table(cellText=dados, loc='center', cellLoc='center')
     tabela.auto_set_font_size(False)

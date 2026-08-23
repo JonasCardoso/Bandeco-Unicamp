@@ -1,0 +1,16 @@
+# Ruff configuration for Bandeco-Unicamp project
+target-version = "py310"
+line-length = 120
+
+[lint]
+# Regras ativadas por padrão (E, F, W, I, B)
+select = ["E", "F", "W", "I", "B"]
+ignore = [
+    # Line too long — já temos line-length=120
+    "E501",
+    # Module level import not at top of file (usado em lazy loading)
+    "E402",
+]
+
+[lint.isort]
+known-first-party = ["bandeco", "comando", "config", "cardapio", "util", "log", "servico"]
