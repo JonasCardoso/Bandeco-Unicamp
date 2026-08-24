@@ -4,19 +4,18 @@ Este módulo contém apenas lógica de transformação de dados e pode ser testa
 independentemente de Firebase, Telegram ou qualquer outro serviço externo.
 """
 
-
 from util import MODALIDADES
 
 # Mapeamento de período para índices da lista de comida
 PERIODOS_INDICES = {
-    'Almoço': [0, 1],      # tradicional, vegano
-    'Jantar': [2, 3],      # tradicional, vegano
+    "Almoço": [0, 1],  # tradicional, vegano
+    "Jantar": [2, 3],  # tradicional, vegano
 }
 
 NOMES_MODALIDADES = {
-    (0, True): MODALIDADES[0],   # Almoço Tradicional
+    (0, True): MODALIDADES[0],  # Almoço Tradicional
     (1, False): MODALIDADES[1],  # Almoço Vegano
-    (2, True): MODALIDADES[2],   # Jantar Tradicional
+    (2, True): MODALIDADES[2],  # Jantar Tradicional
     (3, False): MODALIDADES[3],  # Jantar Vegano
 }
 
@@ -41,16 +40,15 @@ def modalidade_com_cardapio(comida: list, dados: dict, modalidade: str) -> list:
     """
     cardapio = []
 
-    if modalidade == 'Café da manhã':
-        if dados.get('cafe', 1):
-            cardapio.append((comida[4], MODALIDADES[4]))
+    if modalidade == "Café da manhã":
+        cardapio.append((comida[4], MODALIDADES[4]))
 
-    elif modalidade in ('Almoço', 'Jantar'):
+    elif modalidade in ("Almoço", "Jantar"):
         indice_tradicional = PERIODOS_INDICES[modalidade][0]
         indice_vegano = PERIODOS_INDICES[modalidade][1]
 
-        trad_enabled = dados.get('tradicional', 1) == 1
-        veg_enabled = dados.get('vegano', 1) == 1
+        trad_enabled = dados.get("tradicional", 1) == 1
+        veg_enabled = dados.get("vegano", 1) == 1
 
         # Se nenhum está explícito (0,0), mostra ambos como padrão
         if not trad_enabled and not veg_enabled:
@@ -77,7 +75,7 @@ def formatar_cardapio_para_mensagem(cardapio: list, dia_semana: str) -> list:
     """
     mensagens = []
     for item, modalidade in cardapio:
-        if item != 'Refeição não cadastrada.':
-            msg = f'*{modalidade} de {dia_semana}* \n\n{item}'
+        if item != "Refeição não cadastrada.":
+            msg = f"*{modalidade} de {dia_semana}* \n\n{item}"
             mensagens.append(msg)
     return mensagens

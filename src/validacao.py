@@ -20,7 +20,7 @@ def validar_saldo_entrada(ra: str, senha: str) -> bool:
         return False
 
     # Senha não deve conter espaços (o espaço é usado como separador)
-    if ' ' in senha or '\t' in senha:
+    if " " in senha or "\t" in senha:
         return False
 
     # Senha deve ter tamanho mínimo

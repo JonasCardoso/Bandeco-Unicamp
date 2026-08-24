@@ -1,4 +1,5 @@
 """Testes unitários para telegram_servico.py."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -49,9 +50,7 @@ class TestDeletarMensagem:
     async def test_deleta_mensagem_com_sucesso(self, mock_context):
         await deletar_mensagem(mock_context, 123456, 42)
 
-        mock_context.bot.delete_message.assert_called_once_with(
-            chat_id=123456, message_id=42
-        )
+        mock_context.bot.delete_message.assert_called_once_with(chat_id=123456, message_id=42)
 
 
 class TestMandarImagem:

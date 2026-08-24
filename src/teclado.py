@@ -19,7 +19,7 @@ def teclado_dias_semana(periodo: str, dias: list) -> list:
     Returns:
         Estrutura de botões para ReplyKeyboardMarkup.
     """
-    return [[KeyboardButton(f'{periodo} de {dias[i]}')] for i in range(0, len(dias))]
+    return [[KeyboardButton(f"{periodo} de {dias[i]}")] for i in range(0, len(dias))]
 
 
 def teclado_modalidades(dados: dict) -> list:
@@ -31,10 +31,10 @@ def teclado_modalidades(dados: dict) -> list:
     Returns:
         Estrutura de botões para ReplyKeyboardMarkup.
     """
-    return (
-        [[KeyboardButton(f"Tradicional - {verificar_atividade(dados, 'tradicional')}")],
-         [KeyboardButton(f"Vegano - {verificar_atividade(dados, 'vegano')}")]]
-    )
+    return [
+        [KeyboardButton(f"Tradicional - {verificar_atividade(dados, 'tradicional')}")],
+        [KeyboardButton(f"Vegano - {verificar_atividade(dados, 'vegano')}")],
+    ]
 
 
 def teclado_notificacao(dados: dict) -> list:
@@ -46,11 +46,11 @@ def teclado_notificacao(dados: dict) -> list:
     Returns:
         Estrutura de botões para ReplyKeyboardMarkup.
     """
-    return (
-        [[KeyboardButton(f"Café - {verificar_atividade(dados, 'cafe')}")],
-         [KeyboardButton(f"Almoço - {verificar_atividade(dados, 'almoco')}")],
-         [KeyboardButton(f"Jantar - {verificar_atividade(dados, 'jantar')}")]]
-    )
+    return [
+        [KeyboardButton(f"Café - {verificar_atividade(dados, 'cafe')}")],
+        [KeyboardButton(f"Almoço - {verificar_atividade(dados, 'almoco')}")],
+        [KeyboardButton(f"Jantar - {verificar_atividade(dados, 'jantar')}")],
+    ]
 
 
 def teclado_contato() -> list:

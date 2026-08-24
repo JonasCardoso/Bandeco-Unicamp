@@ -41,16 +41,16 @@ async def saldo_bandeco(update: Update, context: CallbackContext, ra_numero: str
 
         response = requests.post(url, timeout=5, data=data)
 
-        if response.json().get('erro') is not None:
-            return 'Usuário e/ou Senha Inválido(s)'
+        if response.json().get("erro") is not None:
+            return "Usuário e/ou Senha Inválido(s)"
         else:
-            valor = "{:.2f}".format(response.json()['cartao'][0]['saldo']).replace('.', ',')
+            valor = "{:.2f}".format(response.json()["cartao"][0]["saldo"]).replace(".", ",")
             return f"O saldo do RA {ra_numero} é de R$ {valor}"
 
     except Exception as error:
         log.adicionar_log(
-            f'saldoBandeco - {update.effective_chat.id} - {update.effective_chat.full_name} - '
-            f'{update.effective_chat.username} - Não foi possível consultar o saldo do RA\n{error}'
+            f"saldoBandeco - {update.effective_chat.id} - {update.effective_chat.full_name} - "
+            f"{update.effective_chat.username} - Não foi possível consultar o saldo do RA\n{error}"
         )
         await log.enviar_log(context)
         return None

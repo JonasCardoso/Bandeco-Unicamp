@@ -10,8 +10,9 @@ from telegram import ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
 
 
-async def mandar_mensagem(context: CallbackContext, chat_id, texto, reply_markup=None,
-                          reply_to_message_id=None, parse_mode="Markdown"):
+async def mandar_mensagem(
+    context: CallbackContext, chat_id, texto, reply_markup=None, reply_to_message_id=None, parse_mode="Markdown"
+):
     """Envia uma mensagem de texto para um chat.
 
     Args:
@@ -78,7 +79,7 @@ async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_mess
         reply_to_message_id: ID da mensagem para responder (opcional).
     """
     try:
-        with open(f'{pathlib.Path().resolve()}/{imagem}.jpg', 'rb') as f:
+        with open(f"{pathlib.Path().resolve()}/{imagem}.jpg", "rb") as f:
             await context.bot.send_photo(
                 chat_id=chat_id,
                 parse_mode="Markdown",

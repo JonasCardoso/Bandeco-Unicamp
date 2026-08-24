@@ -1,4 +1,5 @@
 """Testes unitários para horario.py (consulta de horários de funcionamento)."""
+
 from unittest.mock import MagicMock, patch
 
 import requests as req

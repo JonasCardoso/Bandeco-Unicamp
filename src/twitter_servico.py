@@ -46,12 +46,12 @@ async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -
         log: Instância de Log para registro de erros.
     """
     try:
-        partes = texto.split('Observações:')
+        partes = texto.split("Observações:")
         if len(partes) >= 2:
-            resposta = _get_client().create_tweet(text=f'{titulo}\n\n{partes[0]}')
-            _get_client().create_tweet(text=partes[1], in_reply_to_tweet_id=resposta[0]['id'])
+            resposta = _get_client().create_tweet(text=f"{titulo}\n\n{partes[0]}")
+            _get_client().create_tweet(text=partes[1], in_reply_to_tweet_id=resposta[0]["id"])
         else:
-            _get_client().create_tweet(text=f'{titulo}\n\n{partes[0]}')
+            _get_client().create_tweet(text=f"{titulo}\n\n{partes[0]}")
     except Exception as error:
-        log.adicionar_log(f'postarTweet - {0} - Não foi possível postar o tweet\n{error}')
+        log.adicionar_log(f"postarTweet - {0} - Não foi possível postar o tweet\n{error}")
         await log.enviar_log(context)

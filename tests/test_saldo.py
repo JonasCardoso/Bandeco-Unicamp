@@ -1,4 +1,5 @@
 """Testes unitários para saldo.py (consulta de saldo do cartão Bandeco)."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -25,15 +26,11 @@ class TestSaldoBandeco:
 
         # Mock da resposta da API com saldo válido
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "cartao": [{"saldo": 150.75}]
-        }
+        mock_response.json.return_value = {"cartao": [{"saldo": 150.75}]}
 
         with patch("saldo.requests.post", return_value=mock_response):
             with patch("senha.criptografar_senha", return_value=("md5hash", "sha256hash", "sha512hash")):
-                result = await saldo_bandeco(
-                    mock_update, mock_context, "123456", "abc123", mock_log
-                )
+                result = await saldo_bandeco(mock_update, mock_context, "123456", "abc123", mock_log)
 
         assert result is not None
         assert "R$ 150,75" in result
@@ -59,9 +56,7 @@ class TestSaldoBandeco:
 
         with patch("saldo.requests.post", return_value=mock_response):
             with patch("senha.criptografar_senha", return_value=("md5hash", "sha256hash", "sha512hash")):
-                result = await saldo_bandeco(
-                    mock_update, mock_context, "123456", "senhainc", mock_log
-                )
+                result = await saldo_bandeco(mock_update, mock_context, "123456", "senhainc", mock_log)
 
         assert result == "Usuário e/ou Senha Inválido(s)"
 
@@ -81,15 +76,11 @@ class TestSaldoBandeco:
 
         # Testar saldo com .00 (sem decimais)
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "cartao": [{"saldo": 50.0}]
-        }
+        mock_response.json.return_value = {"cartao": [{"saldo": 50.0}]}
 
         with patch("saldo.requests.post", return_value=mock_response):
             with patch("senha.criptografar_senha", return_value=("md5hash", "sha256hash", "sha512hash")):
-                result = await saldo_bandeco(
-                    mock_update, mock_context, "987654", "xyz789", mock_log
-                )
+                result = await saldo_bandeco(mock_update, mock_context, "987654", "xyz789", mock_log)
 
         assert "R$ 50,00" in result
 
@@ -109,14 +100,10 @@ class TestSaldoBandeco:
 
         # Testar saldo zero
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "cartao": [{"saldo": 0.0}]
-        }
+        mock_response.json.return_value = {"cartao": [{"saldo": 0.0}]}
 
         with patch("saldo.requests.post", return_value=mock_response):
             with patch("senha.criptografar_senha", return_value=("md5hash", "sha256hash", "sha512hash")):
-                result = await saldo_bandeco(
-                    mock_update, mock_context, "111111", "senhatest", mock_log
-                )
+                result = await saldo_bandeco(mock_update, mock_context, "111111", "senhatest", mock_log)
 
         assert "R$ 0,00" in result

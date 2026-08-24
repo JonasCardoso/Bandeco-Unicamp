@@ -5,6 +5,7 @@ e um túnel ngrok para torná-lo acessível externamente.
 """
 
 import http.server
+import shutil
 import socketserver
 import subprocess
 import threading
@@ -15,6 +16,14 @@ from typing import Optional
 import requests
 
 from util import get_token_ngrok
+
+
+def _localizar_ngrok() -> str:
+    """Localiza o agente instalado ou o binário local usado em desenvolvimento."""
+    instalado = shutil.which("ngrok")
+    if instalado:
+        return instalado
+    return str(Path.cwd() / "ngrok")
 
 
 class Ngrok:
@@ -51,16 +60,18 @@ class Ngrok:
 
             try:
                 handler = http.server.SimpleHTTPRequestHandler
+                ngrok_bin = _localizar_ngrok()
                 subprocess.run(
-                    [Path(Path().resolve(), "ngrok"), 'config', 'add-authtoken', get_token_ngrok()],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    [ngrok_bin, "config", "add-authtoken", get_token_ngrok()],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True,
                 )
                 self.httpd = socketserver.TCPServer(("", self._porta), handler)
                 thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
                 thread.start()
                 self.ngrok = subprocess.Popen(
-                    [Path(Path().resolve(), "ngrok"), "http", str(self._porta)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    [ngrok_bin, "http", str(self._porta)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
                 time.sleep(4)
                 resp = requests.get("http://localhost:4040/api/tunnels", timeout=5)
@@ -68,7 +79,7 @@ class Ngrok:
                 return public_url
 
             except Exception as error:
-                log.adicionar_log(f'iniciar_servidor - 0 - Não foi possível iniciar servidor ngrok\n{error}')
+                log.adicionar_log(f"iniciar_servidor - 0 - Não foi possível iniciar servidor ngrok\n{error}")
                 # Garante limpeza em caso de falha
                 self.desligar_servidor(log)
                 return None
@@ -91,7 +102,7 @@ class Ngrok:
                 self.ngrok = None
 
         except Exception as error:
-            log.adicionar_log(f'desligar_ngrok - 0 - Não foi possível desligar ngrok\n{error}')
+            log.adicionar_log(f"desligar_ngrok - 0 - Não foi possível desligar ngrok\n{error}")
 
     def desligar_httpd(self, log):
         """Encerra o servidor HTTP."""
@@ -102,7 +113,7 @@ class Ngrok:
                 self.httpd = None
 
         except Exception as error:
-            log.adicionar_log(f'desligar_httpd - 0 - Não foi possível desligar servidor HTTP\n{error}')
+            log.adicionar_log(f"desligar_httpd - 0 - Não foi possível desligar servidor HTTP\n{error}")
 
     def __enter__(self):
         """Suporte a context manager."""

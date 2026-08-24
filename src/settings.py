@@ -22,6 +22,7 @@ except ImportError:  # pragma: no cover — fallback para ambientes sem pydantic
     # Fallback mínimo: usa dict simples se pydantic-settings não estiver instalado
     class BaseSettings:  # type: ignore[no-redef]
         model_config = SettingsConfigDict  # type: ignore[name-defined]
+
         def __init__(self, **data: Any):  # noqa: D107
             self.__dict__.update(data)
 

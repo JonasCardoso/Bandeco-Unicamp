@@ -28,18 +28,18 @@ def _get_firebase_credentials_dict() -> dict:
         ValueError: Se nem a env var nem o arquivo estiverem disponíveis.
     """
     # Tenta primeiro a variável de ambiente FIREBASE_JSON
-    firebase_json_env = os.environ.get('FIREBASE_JSON')
-    if firebase_json_env and firebase_json_env.strip() != '':
+    firebase_json_env = os.environ.get("FIREBASE_JSON")
+    if firebase_json_env and firebase_json_env.strip() != "":
         try:
             return json.loads(firebase_json_env)
         except json.JSONDecodeError:
             pass  # Se falhar, tenta o arquivo
 
     # Fallback: tenta ler do arquivo firebase.json no disco
-    firebase_path = pathlib.Path('firebase.json')
+    firebase_path = pathlib.Path("firebase.json")
     if firebase_path.exists():
         try:
-            with open(firebase_path, 'r', encoding='utf-8') as f:
+            with open(firebase_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass  # Se falhar, levanta erro
@@ -54,10 +54,7 @@ def _get_firebase_credentials_dict() -> dict:
 if not firebase_admin._apps:
     cred_dict = _get_firebase_credentials_dict()
     cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': get_database_url_firebase()
-    })
-
+    firebase_admin.initialize_app(cred, {"databaseURL": get_database_url_firebase()})
 
 
 class Config:

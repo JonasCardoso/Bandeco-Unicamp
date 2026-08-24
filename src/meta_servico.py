@@ -40,23 +40,22 @@ def criar_container_instagram(
     """
     try:
         payload = {
-            'image_url': f'{url}/{image_scr}',
-            'caption': texto,
-            'access_token': get_instagram_access_token(),
-            'is_carousel_item': carosel
+            "image_url": f"{url}/{image_scr}",
+            "caption": texto,
+            "access_token": get_instagram_access_token(),
+            "is_carousel_item": carosel,
         }
-        response = req.post(get_graph_url() + get_instagram_user_id() + '/media', data=payload)
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", data=payload)
 
         if response.status_code == 200:
-            return json.loads(response.text)['id']
+            return json.loads(response.text)["id"]
         else:
             log.adicionar_log(
-                f'criar_container_instagram - {0} - Não foi possível criar '
-                f'container do instagram\n{response.text}'
+                f"criar_container_instagram - {0} - Não foi possível criar container do instagram\n{response.text}"
             )
 
     except Exception as error:
-        log.adicionar_log(f'criar_container_instagram - {0} - Não foi possível criar container do instagram\n{error}')
+        log.adicionar_log(f"criar_container_instagram - {0} - Não foi possível criar container do instagram\n{error}")
 
     return False
 
@@ -74,23 +73,22 @@ def criar_carrossel_instagram(ids: list, texto: str, log) -> str:
     """
     try:
         payload = {
-            'children': ids,
-            'caption': texto,
-            'media_type': 'CAROUSEL',
-            'access_token': get_instagram_access_token()
+            "children": ids,
+            "caption": texto,
+            "media_type": "CAROUSEL",
+            "access_token": get_instagram_access_token(),
         }
-        response = req.post(get_graph_url() + get_instagram_user_id() + '/media', json=payload)
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", json=payload)
 
         if response.status_code == 200:
-            return json.loads(response.text)['id']
+            return json.loads(response.text)["id"]
         else:
             log.adicionar_log(
-                f'criar_carrossel_instagram - {0} - Não foi possível criar '
-                f'carrossel do instagram\n{response.text}'
+                f"criar_carrossel_instagram - {0} - Não foi possível criar carrossel do instagram\n{response.text}"
             )
 
     except Exception as error:
-        log.adicionar_log(f'criar_carrossel_instagram - {0} - Não foi possível criar carrossel do instagram\n{error}')
+        log.adicionar_log(f"criar_carrossel_instagram - {0} - Não foi possível criar carrossel do instagram\n{error}")
 
     return False
 
@@ -107,25 +105,19 @@ def postar_timeline_instagram(creation_id: str, texto: str, log) -> bool:
         True se publicado com sucesso, False caso contrário.
     """
     try:
-        payload = {
-            'creation_id': creation_id,
-            'caption': texto,
-            'access_token': get_instagram_access_token()
-        }
-        response = req.post(get_graph_url() + get_instagram_user_id() + '/media_publish', data=payload)
+        payload = {"creation_id": creation_id, "caption": texto, "access_token": get_instagram_access_token()}
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media_publish", data=payload)
 
         if response.status_code == 200:
             return True
         else:
             log.adicionar_log(
-                f'postar_timeline_instagram - {0} - Não foi possível postar na timeline do '
-                f'instagram\n{response.text}'
+                f"postar_timeline_instagram - {0} - Não foi possível postar na timeline do instagram\n{response.text}"
             )
 
     except Exception as error:
         log.adicionar_log(
-            f'postar_timeline_instagram - {0} - Não foi possível postar na '
-            f'timeline do instagram\n{error}'
+            f"postar_timeline_instagram - {0} - Não foi possível postar na timeline do instagram\n{error}"
         )
 
     return False
@@ -145,26 +137,21 @@ def postar_timeline_facebook(url: str, image_scr: str, texto: str, log) -> bool:
     """
     try:
         headers = {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         }
 
-        payload = {
-            'url': f'{url}/{image_scr}',
-            'message': texto,
-            'access_token': get_facebook_access_token()
-        }
-        response = req.post(get_graph_url() + get_facebook_user_id() + '/photos', json=payload, headers=headers)
+        payload = {"url": f"{url}/{image_scr}", "message": texto, "access_token": get_facebook_access_token()}
+        response = req.post(get_graph_url() + get_facebook_user_id() + "/photos", json=payload, headers=headers)
 
         if response.status_code == 200:
             return True
         else:
             log.adicionar_log(
-                f'postar_timeline_facebook - {0} - Não foi possível postar na timeline do '
-                f'facebook\n{response.text}'
+                f"postar_timeline_facebook - {0} - Não foi possível postar na timeline do facebook\n{response.text}"
             )
 
     except Exception as error:
-        log.adicionar_log(f'postar_timeline_facebook - {0} - Não foi possível postar na timeline do facebook\n{error}')
+        log.adicionar_log(f"postar_timeline_facebook - {0} - Não foi possível postar na timeline do facebook\n{error}")
 
     return False
 
@@ -179,16 +166,14 @@ async def postar_instagram(titulo: str, texto: str, log, url: str) -> None:
         url: URL pública do servidor ngrok.
     """
     try:
-        container_id = criar_container_instagram(
-            "img_cardapio_post_0.jpg", False, titulo, url, log
-        )
+        container_id = criar_container_instagram("img_cardapio_post_0.jpg", False, titulo, url, log)
         if not container_id:
             return
 
         postar_timeline_instagram(container_id, titulo, log)
 
     except Exception as error:
-        log.adicionar_log(f'postar_instagram - {0} - Erro ao postar no Instagram\\n{error}')
+        log.adicionar_log(f"postar_instagram - {0} - Erro ao postar no Instagram\\n{error}")
 
 
 async def postar_facebook(titulo: str, texto: str, log, url: str) -> None:
@@ -204,12 +189,10 @@ async def postar_facebook(titulo: str, texto: str, log, url: str) -> None:
         postar_timeline_facebook(url, "img_cardapio_post_0.jpg", titulo, log)
 
     except Exception as error:
-        log.adicionar_log(f'postar_facebook - {0} - Erro ao postar no Facebook\\n{error}')
+        log.adicionar_log(f"postar_facebook - {0} - Erro ao postar no Facebook\\n{error}")
 
 
-async def postar_meta(
-    context: CallbackContext, titulo: str, texto: str, log, url: str
-) -> None:
+async def postar_meta(context: CallbackContext, titulo: str, texto: str, log, url: str) -> None:
     """Publica o cardápio no Meta (Instagram e Facebook).
 
     Gera a imagem do cardápio e posta simultaneamente no Instagram e Facebook.
@@ -244,6 +227,5 @@ def gerar_imagem_postagem(titulo_cardapio: str, texto_cardapio: str, log) -> lis
         imagens = _gerar_imagem_artes(titulo_cardapio, texto_cardapio, log)
         return imagens
     except Exception as error:
-        log.adicionar_log(f'gerar_imagem_postagem - {0} - Erro ao gerar imagem\\n{error}')
+        log.adicionar_log(f"gerar_imagem_postagem - {0} - Erro ao gerar imagem\\n{error}")
         return None
-

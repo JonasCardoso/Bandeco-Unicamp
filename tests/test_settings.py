@@ -35,8 +35,8 @@ class TestSettingsInitialization:
         from settings import Settings
 
         s = Settings()
-        assert s.url_bandeco_prefeitura == 'https://exemplo.com/prefeitura/'
-        assert s.url_bandeco_json == 'https://exemplo.com/json'
+        assert s.url_bandeco_prefeitura == "https://exemplo.com/prefeitura/"
+        assert s.url_bandeco_json == "https://exemplo.com/json"
 
 
 class TestSettingsProperties:
@@ -48,35 +48,35 @@ class TestSettingsProperties:
         s = Settings()
         # Com env var definida (mock no conftest)
         assert isinstance(s.API_KEY_TWITTER, str)
-        assert s.API_KEY_TWITTER == 'test_key'
+        assert s.API_KEY_TWITTER == "test_key"
 
     def test_api_key_secret_twitter_property(self):
         from settings import Settings
 
         s = Settings()
-        assert s.API_KEY_SECRET_TWITTER == 'test_secret'
+        assert s.API_KEY_SECRET_TWITTER == "test_secret"
 
     def test_bearer_token_twitter_property(self):
         from settings import Settings
 
         s = Settings()
-        assert s.BEARER_TOKEN_TWITTER == 'test_bearer'
+        assert s.BEARER_TOKEN_TWITTER == "test_bearer"
 
     def test_access_token_twitter_properties(self):
         from settings import Settings
 
         s = Settings()
-        assert s.ACCESS_TOKEN_TWITTER == 'test_access'
-        assert s.ACCESS_TOKEN_SECRET_TWITTER == 'test_access_secret'
+        assert s.ACCESS_TOKEN_TWITTER == "test_access"
+        assert s.ACCESS_TOKEN_SECRET_TWITTER == "test_access_secret"
 
     def test_instagram_facebook_properties(self):
         from settings import Settings
 
         s = Settings()
-        assert s.INSTAGRAM_ACCESS_TOKEN == 'test_ig_token'
-        assert s.FACEBOOK_ACCESS_TOKEN == 'test_fb_token'
-        assert s.INSTAGRAM_USER_ID == '123456789'
-        assert s.FACEBOOK_USER_ID == '987654321'
+        assert s.INSTAGRAM_ACCESS_TOKEN == "test_ig_token"
+        assert s.FACEBOOK_ACCESS_TOKEN == "test_fb_token"
+        assert s.INSTAGRAM_USER_ID == "123456789"
+        assert s.FACEBOOK_USER_ID == "987654321"
 
 
 class TestSettingsSingleton:
@@ -92,15 +92,15 @@ class TestSettingsSingleton:
         from settings import get_settings
 
         # Limpa o singleton para teste isolado
-        original = __import__('settings')._settings_instance
-        __import__('settings')._settings_instance = None
+        original = __import__("settings")._settings_instance
+        __import__("settings")._settings_instance = None
 
         try:
             s1 = get_settings()
             s2 = get_settings()
             assert s1 is s2
         finally:
-            __import__('settings')._settings_instance = original
+            __import__("settings")._settings_instance = original
 
 
 class TestSettingsRequiredFields:
@@ -110,16 +110,16 @@ class TestSettingsRequiredFields:
         from settings import Settings
 
         # Limpa a env var temporariamente
-        with patch.dict(os.environ, {'TOKEN_BOT_TELEGRAM': ''}, clear=False):
+        with patch.dict(os.environ, {"TOKEN_BOT_TELEGRAM": ""}, clear=False):
             s = Settings()
-            assert s.token_bot_telegram == ''
+            assert s.token_bot_telegram == ""
 
     def test_database_url_firebase_obrigatorio(self):
         from settings import Settings
 
-        with patch.dict(os.environ, {'DATABASE_URL_FIREBASE': ''}, clear=False):
+        with patch.dict(os.environ, {"DATABASE_URL_FIREBASE": ""}, clear=False):
             s = Settings()
-            assert s.database_url_firebase == ''
+            assert s.database_url_firebase == ""
 
 
 class TestSettingsConfigDict:
@@ -130,8 +130,8 @@ class TestSettingsConfigDict:
 
         # Deve funcionar com maiusculas/minusculas mistas
         s = Settings()
-        assert hasattr(s, 'horario_cafe')
-        assert hasattr(s, 'token_bot_telegram')
+        assert hasattr(s, "horario_cafe")
+        assert hasattr(s, "token_bot_telegram")
 
 
 class TestSettingsOptionalFields:
@@ -148,13 +148,13 @@ class TestSettingsOptionalFields:
         from settings import Settings
 
         s = Settings()
-        assert s.token_ngrok == 'test_ngrok_token'
+        assert s.token_ngrok == "test_ngrok_token"
 
     def test_groq_access_token_optional(self):
         from settings import Settings
 
         s = Settings()
-        assert s.groq_access_token == 'test_groq_token'
+        assert s.groq_access_token == "test_groq_token"
 
 
 class TestSettingsModelConfig:
@@ -164,6 +164,6 @@ class TestSettingsModelConfig:
         from settings import Settings
 
         # Verifica que o env_file esta configurado
-        assert hasattr(Settings, 'model_config')
+        assert hasattr(Settings, "model_config")
         config = Settings.model_config
-        assert 'env_file' in str(config) or hasattr(config, 'get')
+        assert "env_file" in str(config) or hasattr(config, "get")

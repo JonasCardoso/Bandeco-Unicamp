@@ -59,7 +59,7 @@ def encodeB64(senha: bytes) -> str:
     Returns:
         String codificada em Base64.
     """
-    return base64.b64encode(senha).decode('ascii')
+    return base64.b64encode(senha).decode("ascii")
 
 
 def criptografar_senha(senha: str) -> tuple:

@@ -1,4 +1,5 @@
 """Testes unitários para utilitários (util.py)."""
+
 from unittest.mock import patch
 
 import pytest
@@ -21,11 +22,11 @@ class TestVerificarAtividade:
 
     def test_retorna_ativo_quando_verdadeiro(self):
         dados = {"cafe": 1}
-        assert "Ativo" in verificar_atividade(dados, 'cafe')
+        assert "Ativo" in verificar_atividade(dados, "cafe")
 
     def test_retorna_inativo_quando_falso(self):
         dados = {"almoco": 0}
-        assert "Inativo" in verificar_atividade(dados, 'almoco')
+        assert "Inativo" in verificar_atividade(dados, "almoco")
 
 
 class TestRetryDecorator:
@@ -63,6 +64,7 @@ class TestRetryDecorator:
 
     def test_retry_esgota_todas_as_tentativas(self):
         """Se a função sempre falha, levanta exceção após todas as tentativas."""
+
         @retry(max_attempts=3, delay=0.01)
         def funcao_sempre_falha():
             raise ValueError("Erro permanente")
@@ -90,27 +92,27 @@ class TestRequireEnv:
     """Testes para validação de variáveis de ambiente."""
 
     def test_require_env_variavel_existente(self):
-        with patch.dict('os.environ', {'TEST_VAR_EXISTENTE': 'valor_teste'}):
-            result = _require_env('TEST_VAR_EXISTENTE')
-            assert result == 'valor_teste'
+        with patch.dict("os.environ", {"TEST_VAR_EXISTENTE": "valor_teste"}):
+            result = _require_env("TEST_VAR_EXISTENTE")
+            assert result == "valor_teste"
 
     def test_require_env_variavel_inexistente(self):
         # Garante que a variável não existe
-        env_copy = dict(__import__('os').environ)
-        if 'TEST_VAR_INEXISTENTE' in env_copy:
-            del env_copy['TEST_VAR_INEXISTENTE']
-        with patch.dict('os.environ', env_copy, clear=False):
-            original = __import__('os').environ.pop('TEST_VAR_INEXISTENTE', None)
+        env_copy = dict(__import__("os").environ)
+        if "TEST_VAR_INEXISTENTE" in env_copy:
+            del env_copy["TEST_VAR_INEXISTENTE"]
+        with patch.dict("os.environ", env_copy, clear=False):
+            original = __import__("os").environ.pop("TEST_VAR_INEXISTENTE", None)
             try:
                 with pytest.raises(ValueError, match="Variável de ambiente obrigatória"):
-                    _require_env('TEST_VAR_INEXISTENTE')
+                    _require_env("TEST_VAR_INEXISTENTE")
             finally:
                 if original is not None:
-                    __import__('os').environ['TEST_VAR_INEXISTENTE'] = original
+                    __import__("os").environ["TEST_VAR_INEXISTENTE"] = original
 
     def test_get_env_retorna_none(self):
         # monkeypatch.setenv já definiu todas as vars, então vamos testar com uma que não existe
-        result = _get_env('VARIAVEL_INEXISTENTE_TESTE_999')
+        result = _get_env("VARIAVEL_INEXISTENTE_TESTE_999")
         assert result is None  # Sem default, retorna None
 
 
@@ -119,14 +121,14 @@ class TestConstants:
 
     def test_dias_contem_segunda_a_domingo(self):
         assert len(DIAS) == 7
-        assert DIAS[0] == 'Segunda-feira'
-        assert DIAS[-1] == 'Domingo'
+        assert DIAS[0] == "Segunda-feira"
+        assert DIAS[-1] == "Domingo"
 
     def test_modalidades_contem_tipos_esperados(self):
         assert len(MODALIDADES) == 5
-        assert 'Almoço Tradicional' in MODALIDADES
-        assert 'Almoço Vegano' in MODALIDADES
-        assert 'Café da manhã' in MODALIDADES
+        assert "Almoço Tradicional" in MODALIDADES
+        assert "Almoço Vegano" in MODALIDADES
+        assert "Café da manhã" in MODALIDADES
 
 
 # =============================================================================
@@ -139,16 +141,17 @@ class TestValidarEnvVars:
 
     def test_retorna_lista_vazia_quando_todas_presentes(self, monkeypatch):
         vars_obrigatorias = [
-            'TOKEN_BOT_TELEGRAM',
-            'DATABASE_URL_FIREBASE',
-            'CAM_WEB',
-            'CAM_RU_A',
-            'CAM_RU_B',
-            'CAM_RA',
-            'CAM_RS',
+            "TOKEN_BOT_TELEGRAM",
+            "USERNAME_BOT_TELEGRAM",
+            "DATABASE_URL_FIREBASE",
+            "CAM_WEB",
+            "CAM_RU_A",
+            "CAM_RU_B",
+            "CAM_RA",
+            "CAM_RS",
         ]
         for var in vars_obrigatorias:
-            monkeypatch.setenv(var, 'valor')
+            monkeypatch.setenv(var, "valor")
 
         faltando = validar_env_vars()
         assert faltando == []
@@ -156,44 +159,45 @@ class TestValidarEnvVars:
     def test_retorna_variaveis_faltando(self, monkeypatch):
         # Limpa todas as variáveis relevantes
         vars_obrigatorias = [
-            'TOKEN_BOT_TELEGRAM',
-            'DATABASE_URL_FIREBASE',
-            'CAM_WEB',
-            'CAM_RU_A',
-            'CAM_RU_B',
-            'CAM_RA',
-            'CAM_RS',
+            "TOKEN_BOT_TELEGRAM",
+            "DATABASE_URL_FIREBASE",
+            "CAM_WEB",
+            "CAM_RU_A",
+            "CAM_RU_B",
+            "CAM_RA",
+            "CAM_RS",
         ]
         for var in vars_obrigatorias:
             monkeypatch.delenv(var, raising=False)
 
         # Define apenas algumas
-        monkeypatch.setenv('TOKEN_BOT_TELEGRAM', 'token123')
-        monkeypatch.setenv('DATABASE_URL_FIREBASE', 'https://exemplo.com')
+        monkeypatch.setenv("TOKEN_BOT_TELEGRAM", "token123")
+        monkeypatch.setenv("DATABASE_URL_FIREBASE", "https://exemplo.com")
 
         faltando = validar_env_vars()
 
-        assert 'CAM_WEB' in faltando
-        assert 'CAM_RU_A' in faltando
-        assert 'TOKEN_BOT_TELEGRAM' not in faltando
-        assert 'DATABASE_URL_FIREBASE' not in faltando
+        assert "CAM_WEB" in faltando
+        assert "CAM_RU_A" in faltando
+        assert "TOKEN_BOT_TELEGRAM" not in faltando
+        assert "DATABASE_URL_FIREBASE" not in faltando
 
     def test_variavel_vazia_considerada_faltando(self, monkeypatch):
         vars_obrigatorias = [
-            'TOKEN_BOT_TELEGRAM',
-            'DATABASE_URL_FIREBASE',
-            'CAM_WEB',
-            'CAM_RU_A',
-            'CAM_RU_B',
-            'CAM_RA',
-            'CAM_RS',
+            "TOKEN_BOT_TELEGRAM",
+            "USERNAME_BOT_TELEGRAM",
+            "DATABASE_URL_FIREBASE",
+            "CAM_WEB",
+            "CAM_RU_A",
+            "CAM_RU_B",
+            "CAM_RA",
+            "CAM_RS",
         ]
         for var in vars_obrigatorias:
-            monkeypatch.setenv(var, '')
+            monkeypatch.setenv(var, "")
 
         faltando = validar_env_vars()
 
-        assert len(faltando) == 7
+        assert set(faltando) == set(vars_obrigatorias)
 
 
 class TestLogEnvValidation:
@@ -202,11 +206,11 @@ class TestLogEnvValidation:
     def test_log_ok_quando_sem_faltando(self, capsys):
         log_env_validation([])
         captured = capsys.readouterr()
-        assert 'Todas as variáveis de ambiente obrigatórias estão definidas' in captured.out
+        assert "Todas as variáveis de ambiente obrigatórias estão definidas" in captured.out
 
     def test_log_erro_quando_com_faltando(self, capsys):
-        log_env_validation(['TOKEN_BOT_TELEGRAM', 'CAM_WEB'])
+        log_env_validation(["TOKEN_BOT_TELEGRAM", "CAM_WEB"])
         captured = capsys.readouterr()
-        assert 'Variáveis de ambiente faltando' in captured.out
-        assert '- TOKEN_BOT_TELEGRAM' in captured.out
-        assert '- CAM_WEB' in captured.out
+        assert "Variáveis de ambiente faltando" in captured.out
+        assert "- TOKEN_BOT_TELEGRAM" in captured.out
+        assert "- CAM_WEB" in captured.out

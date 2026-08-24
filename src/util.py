@@ -39,7 +39,7 @@ def salvar_json(dados: Any, nome: str) -> None:
         dados: Dados a serem salvos (deve ser serializável).
         nome: Nome do arquivo (sem extensão).
     """
-    with open(f'{nome}.json', 'w', encoding='utf-8') as f:
+    with open(f"{nome}.json", "w", encoding="utf-8") as f:
         json.dump(json.loads(dados), f, ensure_ascii=False, indent=4)
 
 
@@ -63,6 +63,7 @@ def retry(
     Returns:
         Função decorada com retry.
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -73,7 +74,7 @@ def retry(
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_attempts - 1:
-                        wait_time = delay * (2 ** attempt)
+                        wait_time = delay * (2**attempt)
                         print(
                             f"[RETRY] {func.__name__} falhou "
                             f"(tentativa {attempt + 1}/{max_attempts}): {e}. "
@@ -82,7 +83,9 @@ def retry(
                         time.sleep(wait_time)
             print(f"[ERROR] {func.__name__} falhou após {max_attempts} tentativas: {last_exception}")
             raise last_exception
+
         return wrapper
+
     return decorator
 
 
@@ -99,13 +102,14 @@ def validar_env_vars() -> list[str]:
     """
     # Variáveis críticas necessárias para o bot funcionar
     obrigatorias = [
-        'TOKEN_BOT_TELEGRAM',       # Token do bot Telegram
-        'DATABASE_URL_FIREBASE',    # URL do Firebase Database
-        'CAM_WEB',                  # URL base das câmeras
-        'CAM_RU_A',                 # Identificador câmera RU A
-        'CAM_RU_B',                 # Identificador câmera RU B
-        'CAM_RA',                   # Identificador câmera RA
-        'CAM_RS',                   # Identificador câmera RS
+        "TOKEN_BOT_TELEGRAM",  # Token do bot Telegram
+        "USERNAME_BOT_TELEGRAM",  # Username do bot Telegram
+        "DATABASE_URL_FIREBASE",  # URL do Firebase Database
+        "CAM_WEB",  # URL base das câmeras
+        "CAM_RU_A",  # Identificador câmera RU A
+        "CAM_RU_B",  # Identificador câmera RU B
+        "CAM_RA",  # Identificador câmera RA
+        "CAM_RS",  # Identificador câmera RS
     ]
 
     faltando = [var for var in obrigatorias if not os.environ.get(var)]
@@ -126,18 +130,12 @@ def log_env_validation(faltando: list[str]) -> None:
             print(f"  - {var}")
         print("\nCopie .env.example para .env e preencha os valores necessários.\n")
 
-DIAS = [
-    'Segunda-feira', 'Terça-feira', 'Quarta-feira',
-    'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'
-]
-MODALIDADES = [
-    'Almoço Tradicional', 'Almoço Vegano',
-    'Jantar Tradicional', 'Jantar Vegano',
-    'Café da manhã'
-]
 
-PATH_FONTE_LATO_BOLD = 'src/fonte/Lato-Bold.ttf'
-PATH_FONTE_LATO_MEDIUM = 'src/fonte/Lato-Medium.ttf'
+DIAS = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+MODALIDADES = ["Almoço Tradicional", "Almoço Vegano", "Jantar Tradicional", "Jantar Vegano", "Café da manhã"]
+
+PATH_FONTE_LATO_BOLD = "src/fonte/Lato-Bold.ttf"
+PATH_FONTE_LATO_MEDIUM = "src/fonte/Lato-Medium.ttf"
 
 
 # =============================================================================
@@ -157,200 +155,230 @@ def _require_env(name: str) -> str:
     """Exige que uma variável de ambiente exista. Lança ValueError se ausente."""
     value = os.environ.get(name)
     if value is None:
-        raise ValueError(
-            f"Variável de ambiente obrigatória não definida: '{name}'. "
-            "Verifique o arquivo .env."
-        )
+        raise ValueError(f"Variável de ambiente obrigatória não definida: '{name}'. Verifique o arquivo .env.")
     return value
 
 
 # --- Horários do bot (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_horario_cafe() -> int:
     """Retorna o horário de café (formato 24h)."""
-    return int(_require_env('HORARIO_CAFE'))
+    return int(_require_env("HORARIO_CAFE"))
 
 
 @lru_cache(maxsize=None)
 def get_horario_almoco() -> int:
     """Retorna o horário do almoço (formato 24h)."""
-    return int(_require_env('HORARIO_ALMOCO'))
+    return int(_require_env("HORARIO_ALMOCO"))
 
 
 @lru_cache(maxsize=None)
 def get_horario_jantar() -> int:
     """Retorna o horário do jantar (formato 24h)."""
-    return int(_require_env('HORARIO_JANTAR'))
+    return int(_require_env("HORARIO_JANTAR"))
 
 
 # --- Telegram (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_token_bot_telegram() -> str:
     """Retorna o token do bot do Telegram."""
-    return _require_env('TOKEN_BOT_TELEGRAM')
+    return _require_env("TOKEN_BOT_TELEGRAM")
 
 
 @lru_cache(maxsize=None)
 def get_id_log_channel() -> str:
     """Retorna o ID do canal de logs no Telegram."""
-    return _require_env('ID_LOG_CHANNEL')
+    return _require_env("ID_LOG_CHANNEL")
+
 
 # --- URLs Bandeco (lazy loading) ---
+
 
 @lru_cache(maxsize=None)
 def get_url_bandeco_prefeitura() -> str:
     """Retorna a URL da API Bandeco Prefeitura."""
-    return _require_env('URL_BANDECO_PREFEITURA')
+    return _require_env("URL_BANDECO_PREFEITURA")
 
 
 @lru_cache(maxsize=None)
 def get_url_bandeco_json() -> str:
     """Retorna a URL da API JSON Bandeco."""
-    return _require_env('URL_BANDECO_JSON')
+    return _require_env("URL_BANDECO_JSON")
 
 
 @lru_cache(maxsize=None)
 def get_url_horario() -> str:
     """Retorna a URL de horários dos restaurantes universitários."""
-    return _require_env('URL_HORARIO')
+    return _require_env("URL_HORARIO")
+
+
+@lru_cache(maxsize=None)
+def get_url_valor_refeicao_cafe() -> str:
+    """Retorna a URL da página de valores do café da manhã."""
+    return _require_env("URL_VALOR_REFEICAO_CAFE")
+
+
+@lru_cache(maxsize=None)
+def get_url_valor_refeicao_almoco() -> str:
+    """Retorna a URL da página de valores do almoço e jantar."""
+    return _require_env("URL_VALOR_REFEICAO_ALMOCO")
 
 
 @lru_cache(maxsize=None)
 def get_url_saldo() -> str:
     """Retorna a URL de consulta de saldo Bandeco."""
-    return _require_env('URL_SALDO')
+    return _require_env("URL_SALDO")
 
 
 # --- Firebase (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_database_url_firebase() -> str:
     """Retorna a URL do banco de dados Firebase."""
-    return _require_env('DATABASE_URL_FIREBASE')
+    return _require_env("DATABASE_URL_FIREBASE")
 
 
 @lru_cache(maxsize=None)
 def get_firebase_json() -> str:
     """Retorna o JSON de credenciais do Firebase."""
-    return _require_env('FIREBASE_JSON')
+    return _require_env("FIREBASE_JSON")
+
+
+# --- Bot Telegram (lazy loading) ---
+
+
+@lru_cache(maxsize=None)
+def get_bot_username() -> str:
+    """Retorna o username do bot Telegram."""
+    return _require_env("USERNAME_BOT_TELEGRAM")
+
 
 # --- Twitter/X (lazy loading) ---
+
 
 @lru_cache(maxsize=None)
 def get_api_key_twitter() -> str:
     """Retorna a API Key do Twitter."""
-    return _require_env('API_KEY_TWITTER')
+    return _require_env("API_KEY_TWITTER")
 
 
 @lru_cache(maxsize=None)
 def get_api_key_secret_twitter() -> str:
     """Retorna o API Key Secret do Twitter."""
-    return _require_env('API_KEY_SECRET_TWITTER')
+    return _require_env("API_KEY_SECRET_TWITTER")
 
 
 @lru_cache(maxsize=None)
 def get_bearer_token_twitter() -> str:
     """Retorna o Bearer Token do Twitter."""
-    return _require_env('BEARER_TOKEN_TWITTER')
+    return _require_env("BEARER_TOKEN_TWITTER")
 
 
 @lru_cache(maxsize=None)
 def get_access_token_twitter() -> str:
     """Retorna o Access Token do Twitter."""
-    return _require_env('ACCESS_TOKEN_TWITTER')
+    return _require_env("ACCESS_TOKEN_TWITTER")
 
 
 @lru_cache(maxsize=None)
 def get_access_token_secret_twitter() -> str:
     """Retorna o Access Token Secret do Twitter."""
-    return _require_env('ACCESS_TOKEN_SECRET_TWITTER')
+    return _require_env("ACCESS_TOKEN_SECRET_TWITTER")
 
 
 # --- Câmeras (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_cam_web() -> str:
     """Retorna a URL base das câmeras web."""
-    return _require_env('CAM_WEB')
+    return _require_env("CAM_WEB")
 
 
 @lru_cache(maxsize=None)
 def get_cam_ru_a() -> str:
     """Retorna o identificador da câmera do RU A."""
-    return _require_env('CAM_RU_A')
+    return _require_env("CAM_RU_A")
 
 
 @lru_cache(maxsize=None)
 def get_cam_ru_b() -> str:
     """Retorna o identificador da câmera do RU B."""
-    return _require_env('CAM_RU_B')
+    return _require_env("CAM_RU_B")
 
 
 @lru_cache(maxsize=None)
 def get_cam_ra() -> str:
     """Retorna o identificador da câmera RA."""
-    return _require_env('CAM_RA')
+    return _require_env("CAM_RA")
 
 
 @lru_cache(maxsize=None)
 def get_cam_rs() -> str:
     """Retorna o identificador da câmera RS."""
-    return _require_env('CAM_RS')
+    return _require_env("CAM_RS")
 
 
 @lru_cache(maxsize=None)
 def get_cam_is_json() -> bool:
     """Retorna True se as câmeras usam formato JSON."""
-    return _require_env('CAM_IS_JSON').lower() in ('true', '1', 'yes')
+    return _require_env("CAM_IS_JSON").lower() in ("true", "1", "yes")
+
 
 # --- Meta (Instagram/Facebook) (lazy loading) ---
+
 
 @lru_cache(maxsize=None)
 def get_instagram_access_token() -> str:
     """Retorna o Access Token do Instagram."""
-    return _require_env('INSTAGRAM_ACCESS_TOKEN')
+    return _require_env("INSTAGRAM_ACCESS_TOKEN")
 
 
 @lru_cache(maxsize=None)
 def get_facebook_access_token() -> str:
     """Retorna o Access Token do Facebook."""
-    return _require_env('FACEBOOK_ACCESS_TOKEN')
+    return _require_env("FACEBOOK_ACCESS_TOKEN")
 
 
 @lru_cache(maxsize=None)
 def get_instagram_user_id() -> str:
     """Retorna o User ID do Instagram."""
-    return _require_env('INSTAGRAM_USER_ID')
+    return _require_env("INSTAGRAM_USER_ID")
 
 
 @lru_cache(maxsize=None)
 def get_facebook_user_id() -> str:
     """Retorna o User ID do Facebook."""
-    return _require_env('FACEBOOK_USER_ID')
+    return _require_env("FACEBOOK_USER_ID")
 
 
 @lru_cache(maxsize=None)
 def get_graph_url() -> str:
     """Retorna a URL da API Graph do Facebook/Instagram."""
-    return _require_env('GRAPH_URL')
+    return _require_env("GRAPH_URL")
 
 
 # --- Ngrok (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_token_ngrok() -> str:
     """Retorna o token de autenticação do ngrok."""
-    return _require_env('TOKEN_NGROK')
+    return _require_env("TOKEN_NGROK")
 
 
 # --- IA (Groq) (lazy loading) ---
 
+
 @lru_cache(maxsize=None)
 def get_groq_access_token() -> str:
     """Retorna o Access Token da API Groq."""
-    return _require_env('GROQ_ACCESS_TOKEN')
+    return _require_env("GROQ_ACCESS_TOKEN")
 
 
 # =============================================================================
@@ -395,7 +423,7 @@ class RateLimiter:
 
 
 # Instância global para consultas à API de cardápio (mais restrita)
-rate_limiter_cardapio = RateLimiter(max_calls=3, window_seconds=60.0)
+rate_limiter_cardapio = RateLimiter(max_calls=15, window_seconds=60.0)
 
 # Instância global para consulta de saldo (um pouco mais permissiva)
 rate_limiter_saldo = RateLimiter(max_calls=5, window_seconds=60.0)

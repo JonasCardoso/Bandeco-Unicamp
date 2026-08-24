@@ -28,7 +28,7 @@ def comida(data: str) -> Optional[List[str]]:
     if cardapios is None:
         cardapios = comida_site_json(data)
     if cardapios is not None:
-        siglas = ['ru', 'ra', 'rs', 'hc', 'pts', 'caism']
+        siglas = ["ru", "ra", "rs", "hc", "pts", "caism"]
         for id, cardapio in enumerate(cardapios):
             cardapios[id] = abreviacoes(siglas, cardapio)
         return cardapios
@@ -48,10 +48,12 @@ def abreviacoes(siglas: List[str], cardapio: str) -> str:
     for sigla in siglas:
         indices = [i for i in range(len(cardapio)) if cardapio.startswith(sigla, i)]
         for indice in indices:
-            if ((indice == 0 and not cardapio[indice + len(sigla)].isalpha())
-                    or (not cardapio[indice - 1].isalpha() and indice + len(sigla) == len(cardapio))
-                    or (not cardapio[indice - 1].isalpha() and not cardapio[indice + len(sigla)].isalpha())):
-                cardapio = cardapio[:indice] + sigla.upper() + cardapio[indice + len(sigla):]
+            if (
+                (indice == 0 and not cardapio[indice + len(sigla)].isalpha())
+                or (not cardapio[indice - 1].isalpha() and indice + len(sigla) == len(cardapio))
+                or (not cardapio[indice - 1].isalpha() and not cardapio[indice + len(sigla)].isalpha())
+            ):
+                cardapio = cardapio[:indice] + sigla.upper() + cardapio[indice + len(sigla) :]
     return cardapio
 
 
@@ -68,32 +70,32 @@ def comida_site_prefeitura(data: str) -> Optional[List[str]]:
     try:
         response = req.get(get_url_bandeco_prefeitura() + data, timeout=5)
 
-        if 'Não existe cardápio cadastrado no momento !' in response.text or response.status_code != 200:
+        if "Não existe cardápio cadastrado no momento !" in response.text or response.status_code != 200:
             return None
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         base = soup.find_all("div", {"class": "menu-section"})
         cardapios = list()
 
         for i in base:
-            if 'Não há jantar' in i.text or 'Não há almoço' in i.text:
-                cardapios.append('Refeição não cadastrada.')
+            if "Não há jantar" in i.text or "Não há almoço" in i.text:
+                cardapios.append("Refeição não cadastrada.")
                 continue
-            cardapio = ''
+            cardapio = ""
             i = i.find_all("div")
-            cardapio += i[1].text.capitalize() + '\n'
+            cardapio += i[1].text.capitalize() + "\n"
             i = i[2].findAll(string=True)
             for j in i:
                 if len(j) > 1:
-                    cardapio += j.strip().capitalize() + '\n'
+                    cardapio += j.strip().capitalize() + "\n"
                 else:
-                    cardapio += '\n'
+                    cardapio += "\n"
             cardapios.append(cardapio)
 
         if len(cardapios) == 0:
             return None
 
-        cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
+        cafe = "Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n"
         cardapios.append(cafe)
 
         return cardapios
@@ -115,34 +117,39 @@ def comida_site_json(data: str) -> Optional[List[str]]:
     """
     try:
         response = req.post(get_url_bandeco_json(), timeout=5)
-        if 'Server-unavailable!' in response.text or 'Acesso indevido' in response.text or response.status_code != 200:
+        if "Server-unavailable!" in response.text or "Acesso indevido" in response.text or response.status_code != 200:
             return None
 
-        cardapios = ['Refeição não cadastrada.'] * 4
-        chaves = ['PRATO_PRINCIPAL', 'ACOMPANHAMENTO', 'PTS', 'GUARNICAO', 'SALADA', 'SOBREMESA', 'BEBIDA', 'OBS']
-        refeicoes = ['Almoço', 'Almoço Vegano', 'Jantar', 'Jantar Vegano']
+        cardapios = ["Refeição não cadastrada."] * 4
+        chaves = ["PRATO_PRINCIPAL", "ACOMPANHAMENTO", "PTS", "GUARNICAO", "SALADA", "SOBREMESA", "BEBIDA", "OBS"]
+        refeicoes = ["Almoço", "Almoço Vegano", "Jantar", "Jantar Vegano"]
 
-        for i in response.json()['CARDAPIO']:
-            if i['DATA'] == data:
-                posicao = refeicoes.index(i['TIPO'])
-                cardapio = ''
+        for i in response.json()["CARDAPIO"]:
+            if i["DATA"] == data:
+                posicao = refeicoes.index(i["TIPO"])
+                cardapio = ""
                 for chave in chaves:
-                    if i[chave] == '-' or 'não informado' in i[chave]:
+                    if i[chave] == "-" or "não informado" in i[chave]:
                         continue
-                    frase = i[chave].replace('\r', '')
+                    frase = i[chave].replace("\r", "")
                     if chave == chaves[-1]:
-                        cardapio += '\n' + 'Observações:\n'
-                        frases = frase.replace('<FONT COLOR =\"RED\">', '\n').replace('</b>', '').replace('<b>', '').split('\n')
+                        cardapio += "\n" + "Observações:\n"
+                        frases = (
+                            frase.replace('<FONT COLOR ="RED">', "\n")
+                            .replace("</b>", "")
+                            .replace("<b>", "")
+                            .split("\n")
+                        )
                         for frase in frases:
                             if frase == frases[-1]:
-                                cardapio += '\n'
+                                cardapio += "\n"
                             if len(frase) >= 1:
-                                cardapio += frase.capitalize() + '\n'
+                                cardapio += frase.capitalize() + "\n"
                     else:
-                        cardapio += frase.capitalize() + '\n'
+                        cardapio += frase.capitalize() + "\n"
                 cardapios[posicao] = cardapio
 
-        cafe = 'Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n'
+        cafe = "Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n"
         cardapios.append(cafe)
 
         return cardapios

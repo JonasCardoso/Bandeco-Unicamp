@@ -10,7 +10,10 @@ import os
 import time
 
 import pytz
+from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
+
+load_dotenv()
 
 from comando import (
     ajuda,
@@ -26,10 +29,11 @@ from comando import (
     mensagem_contato,
     modalidade,
     notificacao,
+    preco,
     ra,
+    reset_contato,
     reset_modalidade,
     reset_notificacao,
-    reset_telefone,
     rs,
     ru,
     saldo,
@@ -38,6 +42,7 @@ from comando import (
     twitter,
 )
 from servico import notificar_cardapio
+from tabela import inicializar_pipeline_nutricional
 from util import (
     get_horario_almoco,
     get_horario_cafe,
@@ -54,9 +59,7 @@ from util import (
 os.environ["TZ"] = "America/Sao_Paulo"
 time.tzset()
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -68,42 +71,55 @@ def main():
     if faltando:
         raise SystemExit(1)
 
+    logger.info("Inicializando pipeline nutricional (TACO, TBCA, embedding e reranker)...")
+    inicio_pipeline = time.perf_counter()
+    try:
+        pipeline_nutricional = inicializar_pipeline_nutricional()
+    except Exception as erro:
+        logger.exception("Falha ao inicializar o pipeline nutricional; o bot não será iniciado.")
+        raise SystemExit(1) from erro
+    logger.info(
+        "Pipeline nutricional pronto em %.2fs (dispositivo: %s).",
+        time.perf_counter() - inicio_pipeline,
+        pipeline_nutricional.device,
+    )
 
     application = Application.builder().token(get_token_bot_telegram()).build()
 
-    cafe_horario = dt.time(hour=get_horario_cafe(), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    almoco_horario = dt.time(hour=get_horario_almoco(), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    jantar_horario = dt.time(hour=get_horario_jantar(), minute=0, tzinfo=pytz.timezone('America/Sao_Paulo'))
-    application.job_queue.run_daily(notificar_cardapio, cafe_horario, days=tuple(range(0, 7)), name='Café da manhã')
-    application.job_queue.run_daily(notificar_cardapio, almoco_horario, days=tuple(range(0, 7)), name='Almoço')
-    application.job_queue.run_daily(notificar_cardapio, jantar_horario, days=tuple(range(0, 7)), name='Jantar')
+    cafe_horario = dt.time(hour=get_horario_cafe(), minute=0, tzinfo=pytz.timezone("America/Sao_Paulo"))
+    almoco_horario = dt.time(hour=get_horario_almoco(), minute=0, tzinfo=pytz.timezone("America/Sao_Paulo"))
+    jantar_horario = dt.time(hour=get_horario_jantar(), minute=0, tzinfo=pytz.timezone("America/Sao_Paulo"))
+    application.job_queue.run_daily(notificar_cardapio, cafe_horario, days=tuple(range(0, 7)), name="Café da manhã")
+    application.job_queue.run_daily(notificar_cardapio, almoco_horario, days=tuple(range(0, 7)), name="Almoço")
+    application.job_queue.run_daily(notificar_cardapio, jantar_horario, days=tuple(range(0, 7)), name="Jantar")
 
-    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("cafe", cafe))
     application.add_handler(CommandHandler("almoco", almoco))
     application.add_handler(CommandHandler("jantar", jantar))
-    application.add_handler(CommandHandler('modalidade', modalidade))
-    application.add_handler(CommandHandler('notificacao', notificacao))
-    application.add_handler(CommandHandler('horario', horario))
-    application.add_handler(CommandHandler('saldo', saldo))
-    application.add_handler(CommandHandler('contato', contato))
-    application.add_handler(CommandHandler('ru', ru))
-    application.add_handler(CommandHandler('ra', ra))
-    application.add_handler(CommandHandler('rs', rs))
-    application.add_handler(CommandHandler('tabela', tabela))
-    application.add_handler(CommandHandler('twitter', twitter))
-    application.add_handler(CommandHandler('instagram', instagram))
-    application.add_handler(CommandHandler('facebook', facebook))
-    application.add_handler(CommandHandler('desativar', desativar))
-    application.add_handler(CommandHandler('reset_modalidade', reset_modalidade))
-    application.add_handler(CommandHandler('reset_notificacao', reset_notificacao))
-    application.add_handler(CommandHandler('reset_telefone', reset_telefone))
-    application.add_handler(CommandHandler('ajuda', ajuda))
+    application.add_handler(CommandHandler("modalidade", modalidade))
+    application.add_handler(CommandHandler("notificacao", notificacao))
+    application.add_handler(CommandHandler("horario", horario))
+    application.add_handler(CommandHandler("saldo", saldo))
+    application.add_handler(CommandHandler("contato", contato))
+    application.add_handler(CommandHandler("ru", ru))
+    application.add_handler(CommandHandler("ra", ra))
+    application.add_handler(CommandHandler("rs", rs))
+    application.add_handler(CommandHandler("tabela", tabela))
+    application.add_handler(CommandHandler("preco", preco))
+    application.add_handler(CommandHandler("twitter", twitter))
+    application.add_handler(CommandHandler("instagram", instagram))
+    application.add_handler(CommandHandler("facebook", facebook))
+    application.add_handler(CommandHandler("desativar", desativar))
+    application.add_handler(CommandHandler("reset_modalidade", reset_modalidade))
+    application.add_handler(CommandHandler("reset_notificacao", reset_notificacao))
+    application.add_handler(CommandHandler("reset_contato", reset_contato))
+    application.add_handler(CommandHandler("ajuda", ajuda))
     application.add_handler(MessageHandler(filters.TEXT, mensagem))
     application.add_handler(MessageHandler(filters.CONTACT, mensagem_contato))
 
     application.run_polling()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

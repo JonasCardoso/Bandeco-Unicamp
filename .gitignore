@@ -1,48 +1,72 @@
-# Distribution / packaging
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.python-version
+.venv/
+venv/
 env/
+
+# Distribuição e build
+build/
+dist/
+*.egg-info/
 bin/
-development.ini
 include/
 lib/
-lib64
-myapp/
-__pycache__/
-.idea/
-production.ini
-nul 
+lib64/
 
-# Environment variables (SENSITIVE - NEVER commit)
+# Configuração local e segredos
 .env
-.env.develop
-.env.local
-.env.*.local
-
-# Firebase & cloud credentials
+.env.*
+!.env.example
+development.ini
+production.ini
 firebase.json
 insta.json
 google.json
 
-# Generated images
-img_obs_post_1.jpg
-img_cardapio_post_0.jpg
-tabela_temporaria.jpg
+# Cache e artefatos de execução
 cache_tabela_nutricional.json
-# OS files
+/tabela_temporaria.*
+/src/tabela_temporaria.*
+/tabela_nutricional_*.csv
+/*.jpg
+/*.png
+.cache_bandeco_nutricao/**/*_embeddings_*.pt
+.cache_bandeco_nutricao/**/*.tmp
+.cache_bandeco_nutricao/catalogo/
+.cache_bandeco_nutricao/tbca/html_*.html
+.cache_bandeco_nutricao/tbca/alimentos_meta.json
+
+# Binários portáteis ou derivados
+/ngrok
+*.exe
+*.dll
+*.dylib
+*.bin
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# Testes, cobertura e análise
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE, sistema operacional e temporários
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db
-
-# IDE
+nul
 *.swp
 *.swo
 *~
-
-# Test artifacts
-.pytest_cache/
-.coverage
-htmlcov/
-coverage.xml
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
+*.orig
+*.rej
+*.bak
+*.log

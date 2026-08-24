@@ -2,7 +2,14 @@ services:
   bandeco:
     image: ghcr.io/jonascardoso/bandeco-unicamp:develop
     container_name: bandeco-unicamp-develop
-    ports:
-      - "5001:5000"
+    init: true
+    restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - nutrition-cache-develop:/bandeco/.cache_bandeco_nutricao
+      - model-cache-develop:/home/bandeco/.cache/huggingface
+
+volumes:
+  nutrition-cache-develop:
+  model-cache-develop:

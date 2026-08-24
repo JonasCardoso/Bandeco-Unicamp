@@ -20,8 +20,8 @@ class TestLogClass:
 
     def test_inicializacao_padrao(self):
         log = Log()
-        assert hasattr(log, '_log')
-        assert hasattr(log, '_nivel')
+        assert hasattr(log, "_log")
+        assert hasattr(log, "_nivel")
         assert log._nivel == LogLevel.INFO
 
     def test_adicionar_log_info(self):

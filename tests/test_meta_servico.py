@@ -1,4 +1,5 @@
 """Testes unitários para meta_servico.py."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -135,7 +136,9 @@ class TestPostarMetaIntegration:
                     mock_ig.return_value = None
                     mock_fb.return_value = None
 
-                    await postar_meta(mock_context, "Almoço Tradicional", "Frango grelhado\nArroz", mock_log, "http://url.com")
+                    await postar_meta(
+                        mock_context, "Almoço Tradicional", "Frango grelhado\nArroz", mock_log, "http://url.com"
+                    )
 
                     mock_gerar.assert_called_once()
                     mock_ig.assert_called_once()

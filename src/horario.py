@@ -22,20 +22,22 @@ def horario_funcionamento() -> Optional[str]:
     try:
         horarios = None
         response = requests.get(get_url_horario(), timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
         h5_element = soup.find(id="qual-o-horario-de-funcionamento-e-endereco-dos-restaurantes")
 
         if h5_element:
-            faq_container = h5_element.find_parent('div', class_='block-faq')
+            faq_container = h5_element.find_parent("div", class_="block-faq")
             if faq_container:
-                answer_div = faq_container.find('div', class_='block-faq__faq-answer')
+                answer_div = faq_container.find("div", class_="block-faq__faq-answer")
                 if answer_div:
-                    list_items = answer_div.find_all('li')
-                    horarios = '\n'.join([
-                        li.get_text(strip=True, separator=' ').replace('*', '').replace('  .', '.\n')
-                        for li in list_items[:3]
-                    ])
+                    list_items = answer_div.find_all("li")
+                    horarios = "\n".join(
+                        [
+                            li.get_text(strip=True, separator=" ").replace("*", "").replace("  .", ".\n")
+                            for li in list_items[:3]
+                        ]
+                    )
         if horarios is not None:
             print(horarios)
             return horarios
