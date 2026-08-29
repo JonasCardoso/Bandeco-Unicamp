@@ -3,7 +3,8 @@
 import json
 import os
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -61,6 +62,14 @@ class TestNgrokService:
         assert ngrok.ngrok is None
         assert ngrok.httpd is None
         assert ngrok._porta == 8000
+
+    def test_cleanup_reentrante_nao_deadlocka(self):
+        ngrok = Ngrok()
+        ngrok.ngrok = __import__("unittest.mock").mock.MagicMock()
+        log = __import__("unittest.mock").mock.MagicMock()
+        with ngrok._lock:
+            ngrok.desligar_servidor(log)
+        assert ngrok.ngrok is None
 
     def test_ngrok_context_manager(self):
         with Ngrok() as ngrok:
@@ -197,3 +206,68 @@ class TestConfigClassExtended:
         assert hasattr(config.Config, "pegar_usuario")
         assert hasattr(config.Config, "pegar_todos_usuarios")
         assert hasattr(config.Config, "adicionar_contato")
+
+
+class TestFirebaseImplementacaoReal:
+    def test_ler_json_valido_e_invalido(self, tmp_path):
+        import config
+
+        valido = tmp_path / "valido.json"
+        valido.write_text('{"project_id": "projeto"}', encoding="utf-8")
+        invalido = tmp_path / "invalido.json"
+        invalido.write_text("[1, 2]", encoding="utf-8")
+        assert config._ler_json(valido) == {"project_id": "projeto"}
+        assert config._ler_json(invalido) is None
+        assert config._ler_json(tmp_path / "ausente.json") is None
+
+    def test_credenciais_aceitam_json_e_caminho(self, tmp_path, monkeypatch):
+        import config
+
+        monkeypatch.setattr(config, "Settings", lambda: SimpleNamespace(firebase_json='{"id": 1}'))
+        assert config._get_firebase_credentials_dict() == {"id": 1}
+        arquivo = tmp_path / "firebase.json"
+        arquivo.write_text('{"id": 2}', encoding="utf-8")
+        monkeypatch.setattr(config, "Settings", lambda: SimpleNamespace(firebase_json=str(arquivo)))
+        assert config._get_firebase_credentials_dict() == {"id": 2}
+
+    def test_inicializar_firebase_e_idempotente(self, monkeypatch):
+        import config
+
+        config.firebase_admin._apps = []
+        monkeypatch.setattr(
+            config,
+            "Settings",
+            lambda: SimpleNamespace(database_url_firebase="https://db.test", firebase_json='{"id": 1}'),
+        )
+        config.credentials.Certificate.reset_mock()
+        config.firebase_admin.initialize_app.reset_mock()
+        config.inicializar_firebase()
+        config.firebase_admin.initialize_app.assert_called_once()
+        config.firebase_admin._apps = [object()]
+        config.inicializar_firebase()
+        config.firebase_admin.initialize_app.assert_called_once()
+
+    def test_crud_e_usuario_padrao(self):
+        import config
+
+        ref = MagicMock()
+        filho = ref.child.return_value
+        repositorio = config.Config(ref=ref)
+        assert repositorio.adicionar_contato({"telefone": 1}, "7") is True
+        assert repositorio.atualizar_usuario({"cafe": 1}, "7") is True
+        assert repositorio.criar_usuario("7") is True
+        assert filho.update.call_count == 3
+        ref.get.return_value = {"7": {"cafe": 1}}
+        assert repositorio.pegar_todos_usuarios() == {"7": {"cafe": 1}}
+        ref.order_by_key.return_value.equal_to.return_value.get.return_value = {"7": {"cafe": 1}}
+        assert repositorio.pegar_usuario("7") == {"cafe": 1}
+
+    def test_leituras_invalidas_preservam_fallback(self):
+        import config
+
+        ref = MagicMock()
+        ref.get.return_value = [["não é mapping"]]
+        ref.order_by_key.return_value.equal_to.return_value.get.return_value = [["inválido"]]
+        repositorio = config.Config(ref=ref)
+        assert repositorio.pegar_todos_usuarios() is False
+        assert repositorio.pegar_usuario("7") is False

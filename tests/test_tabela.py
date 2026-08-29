@@ -6,6 +6,7 @@ import pytest
 from bs4 import BeautifulSoup
 
 import tabela
+from nutrition import cache as nutrition_cache
 from tabela import (
     CARDAPIO_EXEMPLO,
     _carregar_cache_tabela,
@@ -188,7 +189,7 @@ class TestPorcoesTotais:
             marcador,
             {},
         )
-        assert tabela.TEMPO_OCIOSO_MODELOS_SEGUNDOS == 60
+        assert tabela.TEMPO_OCIOSO_MODELOS_SEGUNDOS == 300
         pipeline._usos_modelos = 1
         pipeline._descarregar_modelos_se_ocioso()
         assert pipeline.embedding_model is marcador
@@ -204,6 +205,22 @@ class TestPorcoesTotais:
 
 
 class TestInicializacaoPipeline:
+    def test_preflight_informa_cache_sem_permissao(self, tmp_path, monkeypatch):
+        cache = tmp_path / "hf-cache"
+        monkeypatch.setenv("HF_HOME", str(cache))
+        criar_temporario = nutrition_cache.tempfile.NamedTemporaryFile
+
+        def negar_escrita(*args, **kwargs):
+            if Path(kwargs["dir"]) == cache:
+                raise PermissionError("sem permissão")
+            return criar_temporario(*args, **kwargs)
+
+        monkeypatch.setattr(nutrition_cache.tempfile, "NamedTemporaryFile", negar_escrita)
+        with pytest.raises(tabela.DadosNutricionaisIndisponiveis, match="cache não gravável") as erro:
+            tabela.validar_cache_gravavel()
+        assert str(cache) in str(erro.value)
+        assert "uid=" in str(erro.value)
+
     def test_inicializacao_reutiliza_singleton(self, monkeypatch):
         pipeline = object()
         carregamentos = []

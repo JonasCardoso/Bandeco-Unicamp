@@ -4,12 +4,25 @@ Este módulo fornece funções para consultar os cardápios diários
 dos restaurantes universitários através da prefeitura e API JSON.
 """
 
+import logging
 from typing import List, Optional
 
 import requests as req
 from bs4 import BeautifulSoup
 
 from util import get_url_bandeco_json, get_url_bandeco_prefeitura, retry
+
+logger = logging.getLogger(__name__)
+
+
+@retry(max_attempts=3, delay=1.0, exceptions=(req.RequestException,))
+def _get_prefeitura(url: str):
+    return req.get(url, timeout=5)
+
+
+@retry(max_attempts=3, delay=1.0, exceptions=(req.RequestException,))
+def _post_json(url: str):
+    return req.post(url, timeout=5)
 
 
 def comida(data: str) -> Optional[List[str]]:
@@ -57,7 +70,6 @@ def abreviacoes(siglas: List[str], cardapio: str) -> str:
     return cardapio
 
 
-@retry(max_attempts=3, delay=1.0, exceptions=req.RequestException)
 def comida_site_prefeitura(data: str) -> Optional[List[str]]:
     """Consulta o cardápio na página da prefeitura.
 
@@ -68,7 +80,7 @@ def comida_site_prefeitura(data: str) -> Optional[List[str]]:
         Lista de strings com os cardápios ou None em caso de erro.
     """
     try:
-        response = req.get(get_url_bandeco_prefeitura() + data, timeout=5)
+        response = _get_prefeitura(get_url_bandeco_prefeitura() + data)
 
         if "Não existe cardápio cadastrado no momento !" in response.text or response.status_code != 200:
             return None
@@ -101,11 +113,10 @@ def comida_site_prefeitura(data: str) -> Optional[List[str]]:
         return cardapios
 
     except req.RequestException as e:
-        print(f"[ERROR] Erro ao consultar cardápio da prefeitura ({data}): {e}")
+        logger.warning("Erro ao consultar cardápio da prefeitura (%s): %s", data, e)
         return None
 
 
-@retry(max_attempts=3, delay=1.0, exceptions=req.RequestException)
 def comida_site_json(data: str) -> Optional[List[str]]:
     """Consulta o cardápio na API JSON do Bandeco.
 
@@ -116,7 +127,7 @@ def comida_site_json(data: str) -> Optional[List[str]]:
         Lista de strings com os cardápios ou None em caso de erro.
     """
     try:
-        response = req.post(get_url_bandeco_json(), timeout=5)
+        response = _post_json(get_url_bandeco_json())
         if "Server-unavailable!" in response.text or "Acesso indevido" in response.text or response.status_code != 200:
             return None
 
@@ -155,5 +166,5 @@ def comida_site_json(data: str) -> Optional[List[str]]:
         return cardapios
 
     except req.RequestException as e:
-        print(f"[ERROR] Erro ao consultar cardápio JSON ({data}): {e}")
+        logger.warning("Erro ao consultar cardápio JSON (%s): %s", data, e)
         return None

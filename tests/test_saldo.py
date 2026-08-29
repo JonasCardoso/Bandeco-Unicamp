@@ -8,6 +8,16 @@ from saldo import saldo_bandeco
 
 
 class TestSaldoBandeco:
+    @pytest.mark.asyncio
+    async def test_retry_em_erro_de_rede(self, mock_update, mock_context, mock_log):
+        with (
+            patch("saldo.requests.post", side_effect=__import__("requests").RequestException("rede")) as requisicao,
+            patch("util.time.sleep"),
+        ):
+            assert await saldo_bandeco(mock_update, mock_context, "123456", "senha", mock_log) is None
+        assert requisicao.call_count == 3
+        mock_log.enviar_log.assert_awaited_once()
+
     """Testes para a função saldo_bandeco()."""
 
     @pytest.mark.asyncio

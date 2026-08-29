@@ -45,7 +45,7 @@ def criar_container_instagram(
             "access_token": get_instagram_access_token(),
             "is_carousel_item": carosel,
         }
-        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", data=payload)
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", data=payload, timeout=15)
 
         if response.status_code == 200:
             return json.loads(response.text)["id"]
@@ -78,7 +78,7 @@ def criar_carrossel_instagram(ids: list, texto: str, log) -> str:
             "media_type": "CAROUSEL",
             "access_token": get_instagram_access_token(),
         }
-        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", json=payload)
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media", json=payload, timeout=15)
 
         if response.status_code == 200:
             return json.loads(response.text)["id"]
@@ -106,7 +106,7 @@ def postar_timeline_instagram(creation_id: str, texto: str, log) -> bool:
     """
     try:
         payload = {"creation_id": creation_id, "caption": texto, "access_token": get_instagram_access_token()}
-        response = req.post(get_graph_url() + get_instagram_user_id() + "/media_publish", data=payload)
+        response = req.post(get_graph_url() + get_instagram_user_id() + "/media_publish", data=payload, timeout=15)
 
         if response.status_code == 200:
             return True
@@ -141,7 +141,9 @@ def postar_timeline_facebook(url: str, image_scr: str, texto: str, log) -> bool:
         }
 
         payload = {"url": f"{url}/{image_scr}", "message": texto, "access_token": get_facebook_access_token()}
-        response = req.post(get_graph_url() + get_facebook_user_id() + "/photos", json=payload, headers=headers)
+        response = req.post(
+            get_graph_url() + get_facebook_user_id() + "/photos", json=payload, headers=headers, timeout=15
+        )
 
         if response.status_code == 200:
             return True

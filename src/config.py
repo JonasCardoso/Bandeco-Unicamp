@@ -1,152 +1,112 @@
-"""Configuração do Firebase para persistência de dados dos usuários.
+"""Repositório Firebase inicializado explicitamente, sem efeitos colaterais no import."""
 
-Este módulo inicializa a conexão com o Firebase Database e fornece
-uma classe Config para operações CRUD nos registros de usuários.
-"""
+from __future__ import annotations
 
 import json
-import os
-import pathlib
-from typing import Dict
+import logging
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
 
 import firebase_admin
 from firebase_admin import credentials, db
 
-from util import get_database_url_firebase
+from settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
-def _get_firebase_credentials_dict() -> dict:
-    """Retorna as credenciais do Firebase como dicionário.
+def _ler_json(caminho: Path) -> dict[str, Any] | None:
+    try:
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return dados if isinstance(dados, dict) else None
 
-    Tenta primeiro a variável de ambiente FIREBASE_JSON (formato JSON string).
-    Se não existir, tenta ler o arquivo firebase.json do disco.
 
-    Returns:
-        Dicionário com as credenciais do Firebase.
-
-    Raises:
-        ValueError: Se nem a env var nem o arquivo estiverem disponíveis.
-    """
-    # Tenta primeiro a variável de ambiente FIREBASE_JSON
-    firebase_json_env = os.environ.get("FIREBASE_JSON")
-    if firebase_json_env and firebase_json_env.strip() != "":
+def _get_firebase_credentials_dict() -> dict[str, Any]:
+    """Carrega credenciais de FIREBASE_JSON (JSON ou path) ou firebase.json."""
+    valor = Settings().firebase_json
+    if valor and valor.strip():
         try:
-            return json.loads(firebase_json_env)
+            dados = json.loads(valor)
         except json.JSONDecodeError:
-            pass  # Se falhar, tenta o arquivo
+            dados = _ler_json(Path(valor))
+        if isinstance(dados, dict):
+            return dados
 
-    # Fallback: tenta ler do arquivo firebase.json no disco
-    firebase_path = pathlib.Path("firebase.json")
-    if firebase_path.exists():
-        try:
-            with open(firebase_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError):
-            pass  # Se falhar, levanta erro
-
+    dados = _ler_json(Path("firebase.json"))
+    if dados is not None:
+        return dados
     raise ValueError(
-        "Credenciais do Firebase não encontradas. "
-        "Defina a variável de ambiente FIREBASE_JSON ou crie o arquivo firebase.json."
+        "Credenciais do Firebase não encontradas ou inválidas. "
+        "Defina FIREBASE_JSON com JSON/caminho válido ou crie firebase.json."
     )
 
 
-# Inicializa a conexão com o Firebase apenas se ainda não foi inicializada
-if not firebase_admin._apps:
-    cred_dict = _get_firebase_credentials_dict()
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred, {"databaseURL": get_database_url_firebase()})
+def inicializar_firebase() -> None:
+    """Inicializa o SDK uma única vez, no estágio explícito de startup."""
+    if firebase_admin._apps:
+        return
+    config = Settings()
+    if not config.database_url_firebase:
+        raise ValueError("DATABASE_URL_FIREBASE não definida")
+    credencial = credentials.Certificate(_get_firebase_credentials_dict())
+    firebase_admin.initialize_app(credencial, {"databaseURL": config.database_url_firebase})
 
 
 class Config:
-    """Interface para operações no Firebase Database.
+    """Compatibilidade: repositório de usuários persistidos no Firebase."""
 
-    Attributes:
-        ref: Referência ao nó raiz '/usuarios' do banco de dados.
-    """
+    def __init__(self, ref=None):
+        if ref is None:
+            inicializar_firebase()
+            ref = db.reference("/usuarios")
+        self.ref = ref
 
-    ref = db.reference("/usuarios")
-
-    def adicionar_contato(self, dados: Dict[str, object], id_user: str) -> bool:
-        """Adiciona ou atualiza os dados de um usuário.
-
-        Args:
-            dados: Dicionário com os dados a serem salvos.
-            id_user: ID do usuário no Telegram.
-
-        Returns:
-            True se bem-sucedido, False caso contrário.
-        """
+    def adicionar_contato(self, dados: dict[str, object], id_user: str) -> bool:
         try:
             self.ref.child(str(id_user)).update(dados)
             return True
-        except firebase_admin.exceptions.FirebaseError as e:
-            print(f"[ERROR] Firebase - adicionar_contato({id_user}): {e}")
+        except firebase_admin.exceptions.FirebaseError:
+            logger.exception("Falha ao adicionar contato do usuário %s", id_user)
             return False
 
-    def atualizar_usuario(self, dados: Dict[str, object], id_user: str) -> bool:
-        """Atualiza os dados de um usuário existente.
-
-        Args:
-            dados: Dicionário com os novos dados.
-            id_user: ID do usuário no Telegram.
-
-        Returns:
-            True se bem-sucedido, False caso contrário.
-        """
+    def atualizar_usuario(self, dados: dict[str, object], id_user: str) -> bool:
         try:
             self.ref.child(str(id_user)).update(dados)
             return True
-        except firebase_admin.exceptions.FirebaseError as e:
-            print(f"[ERROR] Firebase - atualizar_usuario({id_user}): {e}")
+        except firebase_admin.exceptions.FirebaseError:
+            logger.exception("Falha ao atualizar usuário %s", id_user)
             return False
 
-    def pegar_todos_usuarios(self) -> Dict[str, object] | None:
-        """Recupera todos os usuários cadastrados.
-
-        Returns:
-            Dicionário com todos os usuários ou None em caso de erro.
-        """
+    def pegar_todos_usuarios(self) -> dict[str, object] | bool:
         try:
-            item = dict(self.ref.get())
-            if len(item) > 0:
-                return item
-            else:
-                return False
-        except firebase_admin.exceptions.FirebaseError as e:
-            print(f"[ERROR] Firebase - pegar_todos_usuarios(): {e}")
+            item = self.ref.get()
+            return dict(item) if item else False
+        except (firebase_admin.exceptions.FirebaseError, TypeError, ValueError):
+            logger.exception("Falha ao recuperar usuários")
             return False
 
-    def pegar_usuario(self, id_user: str) -> Dict[str, object] | None:
-        """Recupera os dados de um usuário específico.
-
-        Args:
-            id_user: ID do usuário no Telegram.
-
-        Returns:
-            Dicionário com os dados do usuário ou None em caso de erro.
-        """
+    def pegar_usuario(self, id_user: str) -> dict[str, object] | bool:
         try:
-            item = dict(self.ref.order_by_key().equal_to(str(id_user)).get())
-            if len(item) > 0:
-                return item[str(id_user)]
-            else:
-                return False
-        except firebase_admin.exceptions.FirebaseError as e:
-            print(f"[ERROR] Firebase - pegar_usuario({id_user}): {e}")
+            item = self.ref.order_by_key().equal_to(str(id_user)).get()
+            dados = dict(item) if item else {}
+            return dados.get(str(id_user), False)
+        except (firebase_admin.exceptions.FirebaseError, TypeError, ValueError):
+            logger.exception("Falha ao recuperar usuário %s", id_user)
             return False
 
     def criar_usuario(self, id_user: str) -> bool:
-        """Cria um novo usuário com valores padrão.
+        dados = {"tradicional": 1, "vegano": 0, "cafe": 0, "almoco": 1, "jantar": 1, "telefone": 0}
+        return self.atualizar_usuario(dados, str(id_user))
 
-        Args:
-            id_user: ID do usuário no Telegram.
 
-        Returns:
-            True se bem-sucedido, False caso contrário.
-        """
-        try:
-            dados = {"tradicional": 1, "vegano": 0, "cafe": 0, "almoco": 1, "jantar": 1, "telefone": 0}
-            return self.atualizar_usuario(dados, str(id_user))
-        except firebase_admin.exceptions.FirebaseError as e:
-            print(f"[ERROR] Firebase - criar_usuario({id_user}): {e}")
-            return False
+@lru_cache(maxsize=1)
+def get_firebase() -> Config:
+    """Retorna o repositório compartilhado, criado apenas no primeiro uso."""
+    return Config()
+
+
+def clear_firebase_cache() -> None:
+    get_firebase.cache_clear()

@@ -7,6 +7,7 @@ das câmeras instaladas nos restaurantes universitários.
 import base64
 import datetime as dt
 import json
+import logging
 import pathlib
 import urllib.request
 from datetime import timedelta
@@ -16,6 +17,8 @@ import cv2
 import numpy as np
 
 from util import get_cam_is_json, get_cam_ra, get_cam_rs, get_cam_ru_a, get_cam_ru_b, get_cam_web
+
+logger = logging.getLogger(__name__)
 
 
 def salvar_imagem(imagens: List[bytes], cameras: List[str]) -> None:
@@ -29,17 +32,10 @@ def salvar_imagem(imagens: List[bytes], cameras: List[str]) -> None:
         cv2.imwrite(f"{pathlib.Path().resolve()}/{camera}.jpg", imagem)
 
 
-def verificar_atualizacao(atualizacao) -> bool:
-    """Verifica se passou tempo suficiente para uma nova atualização.
-
-    Args:
-        atualizacao: Última data/hora de atualização.
-
-    Returns:
-        True se deve atualizar, False caso contrário.
-    """
-    data = dt.datetime.today() - timedelta(minutes=atualizacao.minute)
-    return True if data.minute > 0 else False
+def verificar_atualizacao(atualizacao, agora=None) -> bool:
+    """Retorna se decorreu ao menos um minuto desde a última captura."""
+    referencia = agora or dt.datetime.today()
+    return referencia - atualizacao >= timedelta(minutes=1)
 
 
 class Cam:
@@ -93,17 +89,17 @@ class Cam:
         for camera in cameras:
             try:
                 if get_cam_is_json():
-                    resp = urllib.request.urlopen(get_cam_web() + camera + ".json")
+                    resp = urllib.request.urlopen(get_cam_web() + camera + ".json", timeout=10)
                     resp = json.loads(resp.read().decode("utf-8"))
                     imagem = base64.b64decode(resp["image_jpg_b64"])
                     imagem = np.frombuffer(imagem, dtype="uint8")
                     imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
                 else:
-                    resp = urllib.request.urlopen(get_cam_web() + camera + ".jpg")
+                    resp = urllib.request.urlopen(get_cam_web() + camera + ".jpg", timeout=10)
                     imagem = np.asarray(bytearray(resp.read()), dtype="uint8")
                     imagem = cv2.imdecode(imagem, cv2.IMREAD_COLOR)
             except Exception as e:
-                print(f"[ERROR] Cam - pegar_imagem({id_cam}): {e}")
+                logger.warning("Falha ao capturar câmera %s: %s", id_cam, e)
                 return None
 
             imagens.append(imagem)

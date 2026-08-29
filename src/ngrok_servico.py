@@ -40,7 +40,7 @@ class Ngrok:
         # Atributos de instância (não compartilhados entre instâncias)
         self.ngrok = None
         self.httpd = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._porta = 8000
 
     def iniciar_servidor(self, log) -> Optional[str]:
@@ -75,6 +75,7 @@ class Ngrok:
                 )
                 time.sleep(4)
                 resp = requests.get("http://localhost:4040/api/tunnels", timeout=5)
+                resp.raise_for_status()
                 public_url = resp.json()["tunnels"][0]["public_url"]
                 return public_url
 

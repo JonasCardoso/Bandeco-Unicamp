@@ -6,6 +6,7 @@ e mensagens de texto livres do bot Bandeco Unicamp.
 
 import datetime as dt
 from datetime import timedelta
+from functools import lru_cache
 
 from telegram import ForceReply, Update
 from telegram.ext import CallbackContext
@@ -13,10 +14,11 @@ from telegram.ext import CallbackContext
 from bandeco import comida
 from cam import Cam
 from cardapio import modalidade_com_cardapio
+from config import get_firebase
 from horario import horario_funcionamento
 from log import Log
 from saldo import saldo_bandeco
-from servico import firebase, mensagem_cardapio_telegram
+from servico import mensagem_cardapio_telegram
 from tabela import gerar_tabela_nutricional
 from teclado import (
     teclado_contato,
@@ -32,6 +34,7 @@ from telegram_servico import (
 )
 from util import (
     DIAS,
+    get_bot_username,
     get_cam_ra,
     get_cam_rs,
     get_cam_ru_a,
@@ -42,12 +45,16 @@ from util import (
 from validacao import validar_saldo_entrada
 from valor import obter_valores_refeicao
 
-log = Log()
-cam = Cam()
+
+@lru_cache(maxsize=1)
+def get_cam() -> Cam:
+    """Mantém o throttling das câmeras sem criar objeto durante import."""
+    return Cam()
 
 
 async def start(update: Update, context: CallbackContext):
-    if firebase.criar_usuario(update.effective_chat.id):
+    log = Log()
+    if get_firebase().criar_usuario(update.effective_chat.id):
         await mandar_mensagem(
             context,
             update.effective_chat.id,
@@ -87,7 +94,8 @@ async def jantar(update: Update, context: CallbackContext):
 
 
 async def modalidade(update: Update, context: CallbackContext):
-    dados = firebase.pegar_usuario(update.effective_chat.id)
+    log = Log()
+    dados = get_firebase().pegar_usuario(update.effective_chat.id)
     if dados:
         buttons = teclado_modalidades(dados)
         await mandar_mensagem_teclado(
@@ -103,7 +111,8 @@ async def modalidade(update: Update, context: CallbackContext):
 
 
 async def notificacao(update: Update, context: CallbackContext):
-    dados = firebase.pegar_usuario(update.effective_chat.id)
+    log = Log()
+    dados = get_firebase().pegar_usuario(update.effective_chat.id)
     if dados:
         buttons = teclado_notificacao(dados)
         await mandar_mensagem_teclado(
@@ -128,17 +137,14 @@ async def saldo(update: Update, context: CallbackContext):
 
 
 async def tabela(update: Update, context: CallbackContext):
-    if (
-        update.message.reply_to_message is not None
-        and "bandecounicamp_develop_bot" == update.message.reply_to_message["from_user"]["username"]
-    ):
-        message = update.message.reply_to_message.text
+    resposta = update.message.reply_to_message
+    remetente = getattr(resposta, "from_user", None) if resposta is not None else None
+    if resposta is not None and get_bot_username() == getattr(remetente, "username", None):
+        message = resposta.text
         if message is not None and any(word in message for word in ["Almoço", "Jantar", "Café da manhã"]):
-            imagem = gerar_tabela_nutricional(update.message.reply_to_message.text)
+            imagem = gerar_tabela_nutricional(resposta.text)
             if imagem is not None:
-                await mandar_imagem(
-                    context, update.effective_chat.id, imagem, update.message.reply_to_message.message_id
-                )
+                await mandar_imagem(context, update.effective_chat.id, imagem, resposta.message_id)
                 return
             else:
                 await mandar_mensagem(
@@ -167,22 +173,23 @@ async def preco(update: Update, context: CallbackContext):
 
 
 async def ru(update: Update, context: CallbackContext):
-    cam.pegar_imagem("ru")
+    get_cam().pegar_imagem("ru")
     await mandar_imagem(context, update.effective_chat.id, get_cam_ru_a())
     await mandar_imagem(context, update.effective_chat.id, get_cam_ru_b())
 
 
 async def ra(update: Update, context: CallbackContext):
-    cam.pegar_imagem("ra")
+    get_cam().pegar_imagem("ra")
     await mandar_imagem(context, update.effective_chat.id, get_cam_ra())
 
 
 async def rs(update: Update, context: CallbackContext):
-    cam.pegar_imagem("rs")
+    get_cam().pegar_imagem("rs")
     await mandar_imagem(context, update.effective_chat.id, get_cam_rs())
 
 
 async def horario(update: Update, context: CallbackContext):
+    log = Log()
     horarios = horario_funcionamento()
     if horarios is None:
         log.adicionar_log(
@@ -222,8 +229,9 @@ async def facebook(update: Update, context: CallbackContext):
 
 async def desativar(update: Update, context: CallbackContext):
     """Zera TODOS os dados do usuário (modalidade + notificações + contato)."""
+    log = Log()
     dados = {"tradicional": 0, "vegano": 0, "cafe": 0, "almoco": 0, "jantar": 0, "telefone": 0}
-    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+    if get_firebase().atualizar_usuario(dados, update.effective_chat.id):
         await mandar_mensagem(context, update.effective_chat.id, "Olá Unicamper, TODOS os seus dados foram apagados!!!")
         return
 
@@ -236,8 +244,9 @@ async def desativar(update: Update, context: CallbackContext):
 
 async def reset_modalidade(update: Update, context: CallbackContext):
     """Zera apenas as preferências de modalidade (tradicional/vegano)."""
+    log = Log()
     dados = {"tradicional": 0, "vegano": 0}
-    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+    if get_firebase().atualizar_usuario(dados, update.effective_chat.id):
         await mandar_mensagem(context, update.effective_chat.id, "Suas preferências de modalidade foram apagadas!!!")
         return
 
@@ -250,8 +259,9 @@ async def reset_modalidade(update: Update, context: CallbackContext):
 
 async def reset_notificacao(update: Update, context: CallbackContext):
     """Zera apenas as preferências de notificação (cafe/almoço/jantar)."""
+    log = Log()
     dados = {"cafe": 0, "almoco": 0, "jantar": 0}
-    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+    if get_firebase().atualizar_usuario(dados, update.effective_chat.id):
         await mandar_mensagem(context, update.effective_chat.id, "Suas notificações foram desativadas!!!")
         return
 
@@ -264,8 +274,9 @@ async def reset_notificacao(update: Update, context: CallbackContext):
 
 async def reset_contato(update: Update, context: CallbackContext):
     """Zera apenas o contato cadastrado."""
+    log = Log()
     dados = {"telefone": 0}
-    if firebase.atualizar_usuario(dados, update.effective_chat.id):
+    if get_firebase().atualizar_usuario(dados, update.effective_chat.id):
         await mandar_mensagem(context, update.effective_chat.id, "Seu contato foi removido!!!")
         return
 
@@ -309,11 +320,12 @@ By @JonasCardoso"""
 
 
 async def mensagem_contato(update: Update, context: CallbackContext):
-    dados = firebase.pegar_usuario(update.effective_chat.id)
+    log = Log()
+    dados = get_firebase().pegar_usuario(update.effective_chat.id)
     if dados:
         if update.message.contact["user_id"] == update.effective_chat.id:
             dados["telefone"] = str(update.message.contact["phone_number"]).replace("+", "")
-            if firebase.adicionar_contato(dados, update.effective_chat.id):
+            if get_firebase().adicionar_contato(dados, update.effective_chat.id):
                 await mandar_mensagem(context, update.effective_chat.id, "Contato atualizado !")
             else:
                 log.adicionar_log(
@@ -331,6 +343,7 @@ async def mensagem_contato(update: Update, context: CallbackContext):
 
 
 async def mensagem(update: Update, context: CallbackContext):
+    log = Log()
     # MessageHandler também pode receber uma mensagem editada por meio de
     # effective_message. Nesse caso, update.message é None e o update
     # não deve repetir consultas, alterações de preferência ou saldo.
@@ -363,7 +376,7 @@ async def mensagem(update: Update, context: CallbackContext):
             await log.enviar_log(context)
 
         else:
-            dados = firebase.pegar_usuario(update.effective_chat.id)
+            dados = get_firebase().pegar_usuario(update.effective_chat.id)
             if not dados:
                 log.adicionar_log(
                     f"mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - "
@@ -377,7 +390,7 @@ async def mensagem(update: Update, context: CallbackContext):
             await mensagem_cardapio_telegram(update.effective_chat.id, context, cardapio, dia)
 
     elif "Ativo" in update.message.text or "Inativo" in update.message.text:
-        dados = firebase.pegar_usuario(update.effective_chat.id)
+        dados = get_firebase().pegar_usuario(update.effective_chat.id)
         if not dados:
             log.adicionar_log(
                 f"mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - "
@@ -397,7 +410,7 @@ async def mensagem(update: Update, context: CallbackContext):
         elif "Jantar" in update.message.text:
             dados["jantar"] = 0 if dados["jantar"] else 1
 
-        if not firebase.atualizar_usuario(dados, update.effective_chat.id):
+        if not get_firebase().atualizar_usuario(dados, update.effective_chat.id):
             log.adicionar_log(
                 f"mensagem - {update.effective_chat.id} - {update.effective_chat.full_name} - "
                 f"{update.effective_chat.username} - Não foi possível atualizar o usuário"

@@ -89,18 +89,12 @@ class TestSettingsSingleton:
         assert s is not None
 
     def test_get_settings_e_singleton(self):
-        from settings import get_settings
+        from settings import clear_settings_cache, get_settings
 
-        # Limpa o singleton para teste isolado
-        original = __import__("settings")._settings_instance
-        __import__("settings")._settings_instance = None
-
-        try:
-            s1 = get_settings()
-            s2 = get_settings()
-            assert s1 is s2
-        finally:
-            __import__("settings")._settings_instance = original
+        clear_settings_cache()
+        s1 = get_settings()
+        s2 = get_settings()
+        assert s1 is s2
 
 
 class TestSettingsRequiredFields:
@@ -150,11 +144,14 @@ class TestSettingsOptionalFields:
         s = Settings()
         assert s.token_ngrok == "test_ngrok_token"
 
-    def test_groq_access_token_optional(self):
+    def test_hf_token_opcional_nao_e_exposto(self, monkeypatch):
         from settings import Settings
 
-        s = Settings()
-        assert s.groq_access_token == "test_groq_token"
+        segredo = "hf_token_que_nao_deve_ser_logado"
+        monkeypatch.setenv("HF_TOKEN", segredo)
+        settings = Settings()
+        assert settings.hf_token == segredo
+        assert segredo not in repr(settings)
 
 
 class TestSettingsModelConfig:

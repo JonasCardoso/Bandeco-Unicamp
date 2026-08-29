@@ -45,10 +45,14 @@ class TestHorarioFuncionamento:
         assert result is None
 
     def test_retorna_none_em_erro_de_rede(self):
-        with patch("horario.requests.get", side_effect=req.RequestException("Erro de rede")):
+        with (
+            patch("horario.requests.get", side_effect=req.RequestException("Erro de rede")) as requisicao,
+            patch("util.time.sleep"),
+        ):
             result = horario_funcionamento()
 
         assert result is None
+        assert requisicao.call_count == 3
 
     def test_retorna_none_se_status_erro(self):
         mock_response = MagicMock()

@@ -13,15 +13,13 @@ from telegram.ext import CallbackContext
 # =============================================================================
 from bandeco import comida
 from cardapio import modalidade_com_cardapio
-from config import Config as FirebaseConfig
+from config import get_firebase
 from log import Log
 from meta_servico import postar_meta
 from ngrok_servico import Ngrok
 from telegram_servico import mandar_mensagem
 from twitter_servico import postar_tweet
 from util import DIAS, get_horario_almoco, get_horario_cafe, get_horario_jantar
-
-firebase = FirebaseConfig()
 
 
 async def notificar_cardapio(context: CallbackContext) -> None:
@@ -69,7 +67,7 @@ async def notificar_cardapio(context: CallbackContext) -> None:
     ngrok.desligar_servidor(log)
     await log.enviar_log(context)
 
-    usuarios = firebase.pegar_todos_usuarios()
+    usuarios = get_firebase().pegar_todos_usuarios()
     if not usuarios:
         log.adicionar_log(f"notificarCardapio - {0} - Não foi possível pegar todos usuários")
         await log.enviar_log(context)

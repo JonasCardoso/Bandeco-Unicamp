@@ -1,82 +1,49 @@
-"""Configurações do ambiente via pydantic-settings.
-
-Substitui o sistema antigo de variáveis de ambiente (util.py) por um schema
-tipado e validado centralizado, com carregamento automático a partir de:
-  1. Variáveis de ambiente
-  2. Arquivo .env (se existir)
-
-Uso:
-    from settings import Settings
-    settings = Settings()
-    token = settings.token_bot_telegram
-"""
+"""Configuração tipada e carregada de forma preguiçosa."""
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-try:
-    from pydantic_settings import BaseSettings, SettingsConfigDict
-except ImportError:  # pragma: no cover — fallback para ambientes sem pydantic-settings
-    # Fallback mínimo: usa dict simples se pydantic-settings não estiver instalado
-    class BaseSettings:  # type: ignore[no-redef]
-        model_config = SettingsConfigDict  # type: ignore[name-defined]
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-        def __init__(self, **data: Any):  # noqa: D107
-            self.__dict__.update(data)
-
-    class SettingsConfigDict(dict):  # type: ignore[no-redef]
-        pass
+REQUIRED_ENV_VARS = (
+    "TOKEN_BOT_TELEGRAM",
+    "USERNAME_BOT_TELEGRAM",
+    "ID_LOG_CHANNEL",
+    "DATABASE_URL_FIREBASE",
+)
 
 
 class Settings(BaseSettings):
-    """Schema centralizado de configurações do Bandeco-Unicamp Bot.
+    """Configuração do bot; integrações opcionais são validadas quando usadas."""
 
-    Todas as variáveis de ambiente são carregadas automaticamente.
-    Campos opcionais têm valor padrão; campos obrigatórios levantam erro
-    se não estiverem definidos.
-    """
-
-    # -------------------------------------------------------------------------
-    # Horários (formato 24h)
-    # -------------------------------------------------------------------------
     horario_cafe: int = 6
     horario_almoco: int = 10
     horario_jantar: int = 17
 
-    # -------------------------------------------------------------------------
-    # Telegram
-    # -------------------------------------------------------------------------
-    token_bot_telegram: str
-    id_log_channel: str
+    token_bot_telegram: Optional[str] = None
+    username_bot_telegram: Optional[str] = None
+    id_log_channel: Optional[str] = None
 
-    # -------------------------------------------------------------------------
-    # URLs Bandeco
-    # -------------------------------------------------------------------------
     url_bandeco_prefeitura: str = "https://sistemas.prefeitura.unicamp.br/apps/cardapio/index.php?d="
     url_bandeco_json: str = "https://www1.sistemas.prefeitura.unicamp.br/Mobile/CardapioPrefeituraCampinasJSON"
     url_horario: str = "https://prefeitura.unicamp.br/produto/restaurantes-universitarios/#horario"
+    url_valor_refeicao_cafe: str = "https://prefeitura.unicamp.br/produto/valor-da-refeicao-cafe-da-manha/"
+    url_valor_refeicao_almoco: str = "https://prefeitura.unicamp.br/produto/valor-da-refeicao-almoco-e-jantar/"
     url_saldo: str = "https://www1.sistemas.prefeitura.unicamp.br/Mobile/ConsultaSaldo"
 
-    # -------------------------------------------------------------------------
-    # Firebase
-    # -------------------------------------------------------------------------
-    database_url_firebase: str
-    firebase_json: Optional[str] = None  # JSON string ou caminho para arquivo
+    database_url_firebase: Optional[str] = None
+    firebase_json: Optional[str] = None
 
-    # -------------------------------------------------------------------------
-    # Twitter/X API v1.1
-    # -------------------------------------------------------------------------
     api_key_twitter: Optional[str] = None
     api_key_secret_twitter: Optional[str] = None
     bearer_token_twitter: Optional[str] = None
     access_token_twitter: Optional[str] = None
     access_token_secret_twitter: Optional[str] = None
 
-    # -------------------------------------------------------------------------
-    # Câmeras dos RU
-    # -------------------------------------------------------------------------
     cam_web: str = "https://webservices.prefeitura.unicamp.br/cameras/cam_"
     cam_ru_a: str = "ru_a2"
     cam_ru_b: str = "ru_b2"
@@ -84,38 +51,21 @@ class Settings(BaseSettings):
     cam_rs: str = "rs2"
     cam_is_json: bool = False
 
-    # -------------------------------------------------------------------------
-    # Meta (Instagram / Facebook)
-    # -------------------------------------------------------------------------
     instagram_access_token: Optional[str] = None
     facebook_access_token: Optional[str] = None
     instagram_user_id: Optional[str] = None
     facebook_user_id: Optional[str] = None
     graph_url: str = "https://graph.facebook.com/v20.0/"
 
-    # -------------------------------------------------------------------------
-    # Ngrok
-    # -------------------------------------------------------------------------
     token_ngrok: Optional[str] = None
+    hf_token: Optional[str] = Field(default=None, repr=False)
 
-    # -------------------------------------------------------------------------
-    # IA (Groq)
-    # -------------------------------------------------------------------------
-    groq_access_token: Optional[str] = None
-
-    # -------------------------------------------------------------------------
-    # Configuração do pydantic-settings
-    # -------------------------------------------------------------------------
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent.parent / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
-
-    # -------------------------------------------------------------------------
-    # Propriedades auxiliares (aliasing para compatibilidade)
-    # -------------------------------------------------------------------------
 
     @property
     def API_KEY_TWITTER(self) -> str:
@@ -154,13 +104,18 @@ class Settings(BaseSettings):
         return self.facebook_user_id or ""
 
 
-# Instância singleton — carregada preguiçosamente na primeira chamada
-_settings_instance: Optional[Settings] = None
-
-
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Retorna a instância singleton de Settings (lazy loading)."""
-    global _settings_instance
-    if _settings_instance is None:
-        _settings_instance = Settings()  # type: ignore[call-arg]
-    return _settings_instance
+    """Retorna uma única configuração, criada somente no primeiro uso."""
+    return Settings()
+
+
+def clear_settings_cache() -> None:
+    """Invalida a configuração; destinado a testes e reload explícito."""
+    get_settings.cache_clear()
+
+
+def validar_variaveis_obrigatorias(settings: Optional[Settings] = None) -> list[str]:
+    """Retorna os nomes das configurações essenciais ausentes ou vazias."""
+    config = settings or Settings()
+    return [nome for nome in REQUIRED_ENV_VARS if not getattr(config, nome.lower())]

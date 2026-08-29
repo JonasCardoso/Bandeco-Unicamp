@@ -71,8 +71,8 @@ class Log:
                 await mandar_mensagem(context, channel_id, self._log, None, None, "HTML")
                 self.limpar_log()  # Limpa após envio bem-sucedido
                 return True
-            except Exception as e:
-                print(f"[ERROR] Log - enviar_log(): {e}")
+            except Exception:
+                logger.exception("Falha ao enviar log ao canal")
                 return False
         return False
 

@@ -20,17 +20,12 @@ def _inject_external_module_mocks():
     Deve ser chamado uma vez no topo do conftest.py, ANTES de qualquer
     import dos módulos da src/.
     """
-    # --- groq (IA) ---
-    if "groq" not in sys.modules:
-        mock_groq = MagicMock()
-        mock_client = MagicMock()
-        mock_groq.Groq = MagicMock(return_value=mock_client)
-        sys.modules["groq"] = mock_groq
 
     # --- firebase_admin (banco de dados) ---
     if "firebase_admin" not in sys.modules:
         mock_firebase = MagicMock()
         mock_firebase._apps = []
+        mock_firebase.exceptions.FirebaseError = type("FirebaseError", (Exception,), {})
         sys.modules["firebase_admin"] = mock_firebase
 
         mock_cred = MagicMock()
@@ -92,6 +87,7 @@ def mock_firebase_admin():
     if "firebase_admin" not in sys.modules:
         mock_firebase = MagicMock()
         mock_firebase._apps = []
+        mock_firebase.exceptions.FirebaseError = type("FirebaseError", (Exception,), {})
         sys.modules["firebase_admin"] = mock_firebase
 
         mock_cred = MagicMock()
@@ -103,18 +99,6 @@ def mock_firebase_admin():
         mock_db = MagicMock()
         mock_db.reference = MagicMock(return_value=mock_db_ref)
         sys.modules["firebase_admin.db"] = mock_db
-
-    yield
-
-
-@pytest.fixture(autouse=True)
-def mock_groq():
-    """Garante que groq permaneça mockado durante todo o teste."""
-    if "groq" not in sys.modules:
-        mock_groq_mod = MagicMock()
-        mock_client = MagicMock()
-        mock_groq_mod.Groq = MagicMock(return_value=mock_client)
-        sys.modules["groq"] = mock_groq_mod
 
     yield
 
@@ -139,6 +123,7 @@ def mock_env_vars(monkeypatch):
         "HORARIO_ALMOCO": "12",
         "HORARIO_JANTAR": "19",
         "TOKEN_BOT_TELEGRAM": "test_token_123",
+        "USERNAME_BOT_TELEGRAM": "bandeco_test_bot",
         "ID_LOG_CHANNEL": "-100123456",
         "URL_BANDECO_PREFEITURA": "https://exemplo.com/prefeitura/",
         "URL_BANDECO_JSON": "https://exemplo.com/json",
@@ -163,11 +148,16 @@ def mock_env_vars(monkeypatch):
         "FACEBOOK_USER_ID": "987654321",
         "GRAPH_URL": "https://graph.facebook.com/v18.0/",
         "TOKEN_NGROK": "test_ngrok_token",
-        "GROQ_ACCESS_TOKEN": "test_groq_token",
     }
     monkeypatch.setattr(os.environ, "clear", lambda: None)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
+
+    from settings import clear_settings_cache
+
+    clear_settings_cache()
+    yield
+    clear_settings_cache()
 
 
 @pytest.fixture

@@ -4,10 +4,13 @@ Este módulo fornece funções assíncronas para envio de mensagens e imagens
 para o bot do Telegram, incluindo suporte para teclados interativos.
 """
 
+import logging
 import pathlib
 
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
+
+logger = logging.getLogger(__name__)
 
 
 async def mandar_mensagem(
@@ -31,8 +34,8 @@ async def mandar_mensagem(
             reply_markup=reply_markup,
             reply_to_message_id=reply_to_message_id,
         )
-    except Exception as e:
-        print(f"[ERROR] Telegram - mandar_mensagem({chat_id}): {e}")
+    except Exception:
+        logger.exception("Falha ao enviar mensagem para %s", chat_id)
 
 
 async def deletar_mensagem(context: CallbackContext, chat_id, message_id):
@@ -45,8 +48,8 @@ async def deletar_mensagem(context: CallbackContext, chat_id, message_id):
     """
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-    except Exception as e:
-        print(f"[ERROR] Telegram - deletar_mensagem({chat_id}, {message_id}): {e}")
+    except Exception:
+        logger.exception("Falha ao excluir mensagem %s do chat %s", message_id, chat_id)
 
 
 async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, buttons):
@@ -65,8 +68,8 @@ async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, butt
             text=texto,
             reply_markup=ReplyKeyboardMarkup(buttons),
         )
-    except Exception as e:
-        print(f"[ERROR] Telegram - mandar_mensagem_teclado({chat_id}): {e}")
+    except Exception:
+        logger.exception("Falha ao enviar teclado para %s", chat_id)
 
 
 async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_message_id=None):
@@ -86,5 +89,5 @@ async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_mess
                 photo=f,
                 reply_to_message_id=reply_to_message_id,
             )
-    except Exception as e:
-        print(f"[ERROR] Telegram - mandar_imagem({chat_id}, {imagem}): {e}")
+    except Exception:
+        logger.exception("Falha ao enviar imagem %s para %s", imagem, chat_id)

@@ -14,7 +14,13 @@ from senha import criptografar_senha
 from util import get_url_saldo, retry
 
 
-@retry(max_attempts=3, delay=1.0, exceptions=requests.RequestException)
+@retry(max_attempts=3, delay=1.0, exceptions=(requests.RequestException,))
+def _post_saldo(url: str, data: dict):
+    response = requests.post(url, timeout=5, data=data)
+    response.raise_for_status()
+    return response
+
+
 async def saldo_bandeco(update: Update, context: CallbackContext, ra_numero: str, senha: str, log) -> Optional[str]:
     """Consulta o saldo do cartão Bandeco para um RA e senha.
 
@@ -39,7 +45,7 @@ async def saldo_bandeco(update: Update, context: CallbackContext, ra_numero: str
             "rapassword3": hash_SHA512,
         }
 
-        response = requests.post(url, timeout=5, data=data)
+        response = _post_saldo(url, data)
 
         if response.json().get("erro") is not None:
             return "Usuário e/ou Senha Inválido(s)"

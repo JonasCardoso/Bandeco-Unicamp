@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock
 
+import requests
+
 from bandeco import abreviacoes, comida, comida_site_json, comida_site_prefeitura
 
 
@@ -53,6 +55,13 @@ class TestComidaFallback:
 
 class TestComidaSitePrefeitura:
     """Testes para a função comida_site_prefeitura()."""
+
+    def test_retry_em_erro_de_rede(self, monkeypatch):
+        chamadas = MagicMock(side_effect=requests.RequestException("rede"))
+        monkeypatch.setattr("bandeco.req.get", chamadas)
+        monkeypatch.setattr("util.time.sleep", lambda _: None)
+        assert comida_site_prefeitura("2024-01-15") is None
+        assert chamadas.call_count == 3
 
     def test_retorna_none_se_nao_existir_cardapio(self, monkeypatch):
         mock_response = MagicMock()

@@ -4,6 +4,7 @@ Este módulo fornece funções para consultar os horários de funcionamento
 dos restaurantes universitários através da página web.
 """
 
+import logging
 from typing import Optional
 
 import requests
@@ -11,8 +12,14 @@ from bs4 import BeautifulSoup
 
 from util import get_url_horario, retry
 
+logger = logging.getLogger(__name__)
 
-@retry(max_attempts=3, delay=1.0, exceptions=requests.RequestException)
+
+@retry(max_attempts=3, delay=1.0, exceptions=(requests.RequestException,))
+def _get_horario(url: str):
+    return requests.get(url, timeout=10)
+
+
 def horario_funcionamento() -> Optional[str]:
     """Recupera os horários de funcionamento dos restaurantes.
 
@@ -21,7 +28,9 @@ def horario_funcionamento() -> Optional[str]:
     """
     try:
         horarios = None
-        response = requests.get(get_url_horario(), timeout=10)
+        response = _get_horario(get_url_horario())
+        if isinstance(response.status_code, int) and response.status_code >= 400:
+            return None
         soup = BeautifulSoup(response.text, "html.parser")
 
         h5_element = soup.find(id="qual-o-horario-de-funcionamento-e-endereco-dos-restaurantes")
@@ -39,9 +48,8 @@ def horario_funcionamento() -> Optional[str]:
                         ]
                     )
         if horarios is not None:
-            print(horarios)
             return horarios
 
     except requests.RequestException as e:
-        print(f"[ERROR] Horario - horario_funcionamento(): {e}")
+        logger.warning("Falha ao consultar horários: %s", e)
         return None

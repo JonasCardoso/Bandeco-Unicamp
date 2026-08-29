@@ -28,6 +28,7 @@ class TestCriarContainerInstagram:
 
             assert result == "media_123456"
             mock_post.assert_called_once()
+            assert mock_post.call_args.kwargs["timeout"] == 15
 
     def test_cria_container_falha_retorna_false(self):
         mock_log = MagicMock()

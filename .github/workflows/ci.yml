@@ -31,10 +31,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: |
             requirements.txt
@@ -53,7 +53,7 @@ jobs:
             --cov=src \
             --cov-report=term-missing \
             --cov-report=xml \
-            --cov-fail-under=40
+            --cov-fail-under=65
 
       - name: Upload coverage report
         if: github.ref_name == 'main'
@@ -74,10 +74,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: |
             requirements.txt
@@ -86,7 +86,7 @@ jobs:
       - name: Install Ruff
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ruff==0.16.4
+          python -m pip install ruff==0.16.5
 
       - name: Run Ruff
         run: |

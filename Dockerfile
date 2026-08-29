@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.12
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS ngrok
 ARG TARGETARCH
@@ -21,7 +21,7 @@ RUN python -m venv "${VIRTUAL_ENV}"
 COPY requirements.txt /tmp/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip \
-    && python -m pip install --no-compile --index-url "${TORCH_INDEX_URL}" "torch>=2.2,<3" \
+    && python -m pip install --no-compile --index-url "${TORCH_INDEX_URL}" "torch~=2.13.0" \
     && python -m pip install --no-compile -r /tmp/requirements.txt
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
@@ -29,7 +29,8 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MPLCONFIGDIR=/tmp/matplotlib \
-    HF_HOME=/home/bandeco/.cache/huggingface \
+    HF_HOME=/bandeco/.cache_bandeco_nutricao/huggingface \
+    HF_HUB_VERBOSITY=warning \
     TOKENIZERS_PARALLELISM=false \
     OMP_NUM_THREADS=4 \
     MKL_NUM_THREADS=4 \
@@ -40,7 +41,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 bandeco \
     && useradd --uid 10001 --gid bandeco --create-home --shell /usr/sbin/nologin bandeco \
-    && install -d -o bandeco -g bandeco /bandeco /tmp/matplotlib
+    && install -d -o bandeco -g bandeco \
+       /bandeco /bandeco/.cache_bandeco_nutricao \
+       /bandeco/.cache_bandeco_nutricao/huggingface /tmp/matplotlib
 
 WORKDIR /bandeco
 COPY --from=python-deps /opt/venv /opt/venv

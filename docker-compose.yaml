@@ -7,9 +7,7 @@ services:
     env_file:
       - .env
     volumes:
-      - nutrition-cache:/bandeco/.cache_bandeco_nutricao
-      - model-cache:/home/bandeco/.cache/huggingface
+      - runtime-cache:/bandeco/.cache_bandeco_nutricao
 
 volumes:
-  nutrition-cache:
-  model-cache:
+  runtime-cache:

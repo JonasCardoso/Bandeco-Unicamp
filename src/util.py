@@ -7,12 +7,31 @@ Este módulo contém:
 - Variáveis de ambiente validadas via lazy loading (funções getter com cache)
 """
 
+import asyncio
+import inspect
 import json
+import logging
 import os
 import threading
 import time
 from functools import lru_cache, wraps
 from typing import Any, Callable, Optional, Tuple
+
+from constants import (
+    DIAS as DIAS,
+)
+from constants import (
+    MODALIDADES as MODALIDADES,
+)
+from constants import (
+    PATH_FONTE_LATO_BOLD as PATH_FONTE_LATO_BOLD,
+)
+from constants import (
+    PATH_FONTE_LATO_MEDIUM as PATH_FONTE_LATO_MEDIUM,
+)
+from settings import Settings, validar_variaveis_obrigatorias
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Utilitários
@@ -51,40 +70,53 @@ def salvar_json(dados: Any, nome: str) -> None:
 def retry(
     max_attempts: int = 3,
     delay: float = 1.0,
-    exceptions: Tuple[type, ...] = (Exception,),
+    exceptions: Tuple[type[BaseException], ...] = (Exception,),
 ) -> Callable:
-    """Decorator que faz retry em caso de falha com backoff exponencial.
-
-    Args:
-        max_attempts: Número máximo de tentativas.
-        delay: Delay inicial em segundos.
-        exceptions: Tupla de exceções que devem ser capturadas.
-
-    Returns:
-        Função decorada com retry.
-    """
+    """Repete funções síncronas ou assíncronas com backoff exponencial."""
+    if max_attempts < 1:
+        raise ValueError("max_attempts deve ser maior ou igual a 1")
 
     def decorator(func: Callable) -> Callable:
+        def registrar_tentativa(attempt: int, erro: BaseException) -> None:
+            espera = delay * (2**attempt)
+            logger.warning(
+                "%s falhou (tentativa %s/%s): %s; nova tentativa em %.1fs",
+                func.__name__,
+                attempt + 1,
+                max_attempts,
+                erro,
+                espera,
+            )
+
+        if inspect.iscoroutinefunction(func):
+
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                for attempt in range(max_attempts):
+                    try:
+                        return await func(*args, **kwargs)
+                    except exceptions as erro:
+                        if attempt == max_attempts - 1:
+                            logger.error("%s falhou após %s tentativas", func.__name__, max_attempts)
+                            raise
+                        registrar_tentativa(attempt, erro)
+                        await asyncio.sleep(delay * (2**attempt))
+
+            return async_wrapper
+
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exception = None
+        def sync_wrapper(*args, **kwargs):
             for attempt in range(max_attempts):
                 try:
                     return func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    if attempt < max_attempts - 1:
-                        wait_time = delay * (2**attempt)
-                        print(
-                            f"[RETRY] {func.__name__} falhou "
-                            f"(tentativa {attempt + 1}/{max_attempts}): {e}. "
-                            f"Re Tentando em {wait_time:.1f}s..."
-                        )
-                        time.sleep(wait_time)
-            print(f"[ERROR] {func.__name__} falhou após {max_attempts} tentativas: {last_exception}")
-            raise last_exception
+                except exceptions as erro:
+                    if attempt == max_attempts - 1:
+                        logger.error("%s falhou após %s tentativas", func.__name__, max_attempts)
+                        raise
+                    registrar_tentativa(attempt, erro)
+                    time.sleep(delay * (2**attempt))
 
-        return wrapper
+        return sync_wrapper
 
     return decorator
 
@@ -100,20 +132,7 @@ def validar_env_vars() -> list[str]:
     Returns:
         Lista com os nomes das variáveis faltando (vazia se tudo OK).
     """
-    # Variáveis críticas necessárias para o bot funcionar
-    obrigatorias = [
-        "TOKEN_BOT_TELEGRAM",  # Token do bot Telegram
-        "USERNAME_BOT_TELEGRAM",  # Username do bot Telegram
-        "DATABASE_URL_FIREBASE",  # URL do Firebase Database
-        "CAM_WEB",  # URL base das câmeras
-        "CAM_RU_A",  # Identificador câmera RU A
-        "CAM_RU_B",  # Identificador câmera RU B
-        "CAM_RA",  # Identificador câmera RA
-        "CAM_RS",  # Identificador câmera RS
-    ]
-
-    faltando = [var for var in obrigatorias if not os.environ.get(var)]
-    return faltando
+    return validar_variaveis_obrigatorias()
 
 
 def log_env_validation(faltando: list[str]) -> None:
@@ -123,19 +142,9 @@ def log_env_validation(faltando: list[str]) -> None:
         faltando: Lista com as variáveis faltando.
     """
     if not faltando:
-        print("[OK] Todas as variáveis de ambiente obrigatórias estão definidas.")
-    else:
-        print("[ERRO] Variáveis de ambiente faltando:")
-        for var in faltando:
-            print(f"  - {var}")
-        print("\nCopie .env.example para .env e preencha os valores necessários.\n")
-
-
-DIAS = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
-MODALIDADES = ["Almoço Tradicional", "Almoço Vegano", "Jantar Tradicional", "Jantar Vegano", "Café da manhã"]
-
-PATH_FONTE_LATO_BOLD = "src/fonte/Lato-Bold.ttf"
-PATH_FONTE_LATO_MEDIUM = "src/fonte/Lato-Medium.ttf"
+        logger.info("Todas as variáveis de ambiente obrigatórias estão definidas.")
+        return
+    logger.error("Variáveis de ambiente faltando: %s", ", ".join(faltando))
 
 
 # =============================================================================
@@ -147,14 +156,18 @@ PATH_FONTE_LATO_MEDIUM = "src/fonte/Lato-Medium.ttf"
 
 
 def _get_env(name: str, default: Optional[str] = None) -> Optional[str]:
-    """Retorna variável de ambiente ou None se não existir."""
-    return os.environ.get(name)
+    """Retorna uma variável de ambiente respeitando o default informado."""
+    return os.environ.get(name, default)
 
 
-def _require_env(name: str) -> str:
-    """Exige que uma variável de ambiente exista. Lança ValueError se ausente."""
-    value = os.environ.get(name)
-    if value is None:
+def _require_env(name: str) -> Any:
+    """Obtém configuração tipada e rejeita valor ausente ou vazio."""
+    campo = name.lower()
+    if campo in Settings.model_fields:
+        value = getattr(Settings(), campo)
+    else:
+        value = _get_env(name)
+    if value is None or value == "":
         raise ValueError(f"Variável de ambiente obrigatória não definida: '{name}'. Verifique o arquivo .env.")
     return value
 
@@ -327,7 +340,8 @@ def get_cam_rs() -> str:
 @lru_cache(maxsize=None)
 def get_cam_is_json() -> bool:
     """Retorna True se as câmeras usam formato JSON."""
-    return _require_env("CAM_IS_JSON").lower() in ("true", "1", "yes")
+    value = _require_env("CAM_IS_JSON")
+    return value if isinstance(value, bool) else value.lower() in ("true", "1", "yes")
 
 
 # --- Meta (Instagram/Facebook) (lazy loading) ---
@@ -370,15 +384,6 @@ def get_graph_url() -> str:
 def get_token_ngrok() -> str:
     """Retorna o token de autenticação do ngrok."""
     return _require_env("TOKEN_NGROK")
-
-
-# --- IA (Groq) (lazy loading) ---
-
-
-@lru_cache(maxsize=None)
-def get_groq_access_token() -> str:
-    """Retorna o Access Token da API Groq."""
-    return _require_env("GROQ_ACCESS_TOKEN")
 
 
 # =============================================================================
