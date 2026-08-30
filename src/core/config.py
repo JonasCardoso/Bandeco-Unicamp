@@ -182,37 +182,13 @@ def get_bot_username() -> str:
     return _require_env("USERNAME_BOT_TELEGRAM")
 
 
-# --- Twitter/X (lazy loading) ---
+# --- Twitter/X via tweetkit_x (lazy loading) ---
 
 
 @lru_cache(maxsize=None)
-def get_api_key_twitter() -> str:
-    """Retorna a API Key do Twitter."""
-    return _require_env("API_KEY_TWITTER")
-
-
-@lru_cache(maxsize=None)
-def get_api_key_secret_twitter() -> str:
-    """Retorna o API Key Secret do Twitter."""
-    return _require_env("API_KEY_SECRET_TWITTER")
-
-
-@lru_cache(maxsize=None)
-def get_bearer_token_twitter() -> str:
-    """Retorna o Bearer Token do Twitter."""
-    return _require_env("BEARER_TOKEN_TWITTER")
-
-
-@lru_cache(maxsize=None)
-def get_access_token_twitter() -> str:
-    """Retorna o Access Token do Twitter."""
-    return _require_env("ACCESS_TOKEN_TWITTER")
-
-
-@lru_cache(maxsize=None)
-def get_access_token_secret_twitter() -> str:
-    """Retorna o Access Token Secret do Twitter."""
-    return _require_env("ACCESS_TOKEN_SECRET_TWITTER")
+def get_tweetkit_cookie() -> str:
+    """Retorna o cookie de sessão usado pelo tweetkit_x."""
+    return _require_env("TWEETKIT_COOKIE")
 
 
 # --- Câmeras (lazy loading) ---

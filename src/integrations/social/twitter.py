@@ -1,36 +1,28 @@
-"""Serviço de integração com Twitter/X.
+"""Serviço de integração com Twitter/X via tweetkit_x."""
 
-Este módulo fornece funções para postar tweets sobre os cardápios
-do Bandeco Unicamp através da API v2 do Twitter.
-"""
-
-import tweepy
 from telegram.ext import CallbackContext
+from tweetkit_x import TweetKit
 
-from core.config import (
-    get_access_token_secret_twitter,
-    get_access_token_twitter,
-    get_api_key_secret_twitter,
-    get_api_key_twitter,
-    get_bearer_token_twitter,
-)
+from core.config import get_tweetkit_cookie
 
 # Cliente Twitter/X — inicializado sob demanda via lazy loading
 _client = None
 
 
-def _get_client() -> tweepy.Client:
+def _get_client() -> TweetKit:
     """Retorna o cliente Twitter/X, criando-o sob demanda."""
     global _client
     if _client is None:
-        _client = tweepy.Client(
-            bearer_token=get_bearer_token_twitter(),
-            consumer_key=get_api_key_twitter(),
-            consumer_secret=get_api_key_secret_twitter(),
-            access_token=get_access_token_twitter(),
-            access_token_secret=get_access_token_secret_twitter(),
-        )
+        _client = TweetKit(cookie=get_tweetkit_cookie())
     return _client
+
+
+def _validar_resposta(resposta: dict) -> dict:
+    """Retorna uma resposta bem-sucedida ou converte a falha em exceção."""
+    if not isinstance(resposta, dict) or not resposta.get("ok"):
+        detalhe = resposta.get("error", resposta) if isinstance(resposta, dict) else resposta
+        raise RuntimeError(f"Falha ao publicar no Twitter/X: {detalhe}")
+    return resposta
 
 
 async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -> None:
@@ -47,11 +39,10 @@ async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -
     """
     try:
         partes = texto.split("Observações:")
+        cliente = _get_client()
+        resposta = _validar_resposta(cliente.post(f"{titulo}\n\n{partes[0]}"))
         if len(partes) >= 2:
-            resposta = _get_client().create_tweet(text=f"{titulo}\n\n{partes[0]}")
-            _get_client().create_tweet(text=partes[1], in_reply_to_tweet_id=resposta[0]["id"])
-        else:
-            _get_client().create_tweet(text=f"{titulo}\n\n{partes[0]}")
+            _validar_resposta(cliente.post(partes[1], reply_to=resposta["id"]))
     except Exception as error:
         log.adicionar_log(f"postarTweet - {0} - Não foi possível postar o tweet\n{error}")
         await log.enviar_log(context)

@@ -46,32 +46,11 @@ class TestSettingsInitialization:
 class TestSettingsProperties:
     """Testes para as propriedades auxiliares (aliasing) do Settings."""
 
-    def test_api_key_twitter_property(self):
+    def test_tweetkit_cookie_configurado(self):
         from core.settings import Settings
 
         s = Settings()
-        # Com env var definida (mock no conftest)
-        assert isinstance(s.API_KEY_TWITTER, str)
-        assert s.API_KEY_TWITTER == "test_key"
-
-    def test_api_key_secret_twitter_property(self):
-        from core.settings import Settings
-
-        s = Settings()
-        assert s.API_KEY_SECRET_TWITTER == "test_secret"
-
-    def test_bearer_token_twitter_property(self):
-        from core.settings import Settings
-
-        s = Settings()
-        assert s.BEARER_TOKEN_TWITTER == "test_bearer"
-
-    def test_access_token_twitter_properties(self):
-        from core.settings import Settings
-
-        s = Settings()
-        assert s.ACCESS_TOKEN_TWITTER == "test_access"
-        assert s.ACCESS_TOKEN_SECRET_TWITTER == "test_access_secret"
+        assert s.tweetkit_cookie == "auth_token=test_auth; ct0=test_csrf"
 
     def test_configuracao_meta_v26(self):
         from core.settings import Settings
@@ -91,6 +70,7 @@ class TestSettingsProperties:
 
         s = Settings()
         assert "test_meta_page_token" not in repr(s)
+        assert "test_auth" not in repr(s)
         assert "service_account" not in repr(s)
         assert "test-r2-access" not in repr(s)
         assert "test-r2-secret" not in repr(s)

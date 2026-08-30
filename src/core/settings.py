@@ -38,11 +38,7 @@ class Settings(BaseSettings):
     database_url_firebase: Optional[str] = None
     firebase_json: Optional[str] = Field(default=None, repr=False)
 
-    api_key_twitter: Optional[str] = None
-    api_key_secret_twitter: Optional[str] = None
-    bearer_token_twitter: Optional[str] = None
-    access_token_twitter: Optional[str] = None
-    access_token_secret_twitter: Optional[str] = None
+    tweetkit_cookie: Optional[str] = Field(default=None, repr=False)
 
     cam_web: str = "https://webservices.prefeitura.unicamp.br/cameras/cam_"
     cam_ru_a: str = "ru_a2"
@@ -68,26 +64,6 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
-    @property
-    def API_KEY_TWITTER(self) -> str:
-        return self.api_key_twitter or ""
-
-    @property
-    def API_KEY_SECRET_TWITTER(self) -> str:
-        return self.api_key_secret_twitter or ""
-
-    @property
-    def BEARER_TOKEN_TWITTER(self) -> str:
-        return self.bearer_token_twitter or ""
-
-    @property
-    def ACCESS_TOKEN_TWITTER(self) -> str:
-        return self.access_token_twitter or ""
-
-    @property
-    def ACCESS_TOKEN_SECRET_TWITTER(self) -> str:
-        return self.access_token_secret_twitter or ""
 
 
 @lru_cache(maxsize=1)
