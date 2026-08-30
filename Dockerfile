@@ -2,17 +2,6 @@
 
 ARG PYTHON_VERSION=3.12
 
-FROM python:${PYTHON_VERSION}-slim-bookworm AS ngrok
-ARG TARGETARCH
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
-    && case "${TARGETARCH}" in amd64|arm64) ;; *) echo "Arquitetura não suportada: ${TARGETARCH}" >&2; exit 1 ;; esac \
-    && curl --fail --show-error --silent --location \
-       "https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-linux-${TARGETARCH}.tgz" \
-       | tar -xz -C /usr/local/bin \
-    && ngrok version \
-    && rm -rf /var/lib/apt/lists/*
-
 FROM python:${PYTHON_VERSION}-slim-bookworm AS python-deps
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
@@ -48,7 +37,6 @@ RUN apt-get update \
 
 WORKDIR /bandeco
 COPY --from=python-deps /opt/venv /opt/venv
-COPY --from=ngrok /usr/local/bin/ngrok /usr/local/bin/ngrok
 COPY --chown=bandeco:bandeco src/ ./src/
 COPY --chown=bandeco:bandeco .cache_bandeco_nutricao/taco_composicao.csv ./.cache_bandeco_nutricao/
 COPY --chown=bandeco:bandeco .cache_bandeco_nutricao/tbca/alimentos.txt ./.cache_bandeco_nutricao/tbca/

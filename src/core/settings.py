@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     url_saldo: str = "https://www1.sistemas.prefeitura.unicamp.br/Mobile/ConsultaSaldo"
 
     database_url_firebase: Optional[str] = None
-    firebase_json: Optional[str] = None
+    firebase_json: Optional[str] = Field(default=None, repr=False)
 
     api_key_twitter: Optional[str] = None
     api_key_secret_twitter: Optional[str] = None
@@ -51,13 +51,15 @@ class Settings(BaseSettings):
     cam_rs: str = "rs2"
     cam_is_json: bool = False
 
-    instagram_access_token: Optional[str] = None
-    facebook_access_token: Optional[str] = None
+    meta_page_access_token: Optional[str] = Field(default=None, repr=False)
+    meta_graph_api_version: Literal["v26.0"] = "v26.0"
     instagram_user_id: Optional[str] = None
-    facebook_user_id: Optional[str] = None
-    graph_url: str = "https://graph.facebook.com/v20.0/"
+    facebook_page_id: Optional[str] = None
 
-    token_ngrok: Optional[str] = None
+    r2_account_id: Optional[str] = None
+    r2_access_key_id: Optional[str] = Field(default=None, repr=False)
+    r2_secret_access_key: Optional[str] = Field(default=None, repr=False)
+    r2_bucket: Optional[str] = None
     hf_token: Optional[str] = Field(default=None, repr=False)
 
     model_config = SettingsConfigDict(
@@ -86,22 +88,6 @@ class Settings(BaseSettings):
     @property
     def ACCESS_TOKEN_SECRET_TWITTER(self) -> str:
         return self.access_token_secret_twitter or ""
-
-    @property
-    def INSTAGRAM_ACCESS_TOKEN(self) -> str:
-        return self.instagram_access_token or ""
-
-    @property
-    def FACEBOOK_ACCESS_TOKEN(self) -> str:
-        return self.facebook_access_token or ""
-
-    @property
-    def INSTAGRAM_USER_ID(self) -> str:
-        return self.instagram_user_id or ""
-
-    @property
-    def FACEBOOK_USER_ID(self) -> str:
-        return self.facebook_user_id or ""
 
 
 @lru_cache(maxsize=1)

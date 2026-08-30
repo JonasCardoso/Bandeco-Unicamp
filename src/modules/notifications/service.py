@@ -11,7 +11,6 @@ from telegram.ext import CallbackContext
 from core.config import get_horario_almoco, get_horario_cafe, get_horario_jantar
 from core.constants import DIAS
 from integrations.firebase.user_repository import get_firebase
-from integrations.ngrok import Ngrok
 from integrations.social.meta import postar_meta
 from integrations.social.twitter import postar_tweet
 
@@ -34,8 +33,6 @@ async def notificar_cardapio(context: CallbackContext) -> None:
         context: Contexto do bot Telegram.
     """
     log = Log()
-    ngrok = Ngrok()
-
     hoje = dt.datetime.today()
     cardapio_dia = comida(hoje.strftime("%Y-%m-%d"))
 
@@ -46,8 +43,6 @@ async def notificar_cardapio(context: CallbackContext) -> None:
 
     dados_periodo = ""
     modalidade = ""
-
-    url = ngrok.iniciar_servidor(log)
 
     if hoje.hour == get_horario_cafe():
         dados_periodo = "cafe"
@@ -64,9 +59,8 @@ async def notificar_cardapio(context: CallbackContext) -> None:
     )
     await mensagem_cardapio_telegram("@bandecounicamp", context, cardapio, hoje)
     await mensagem_cardapio_twitter(context, cardapio, hoje)
-    await mensagem_cardapio_meta(context, cardapio, hoje, url)
+    await mensagem_cardapio_meta(context, cardapio, hoje)
 
-    ngrok.desligar_servidor(log)
     await log.enviar_log(context)
 
     usuarios = get_firebase().pegar_todos_usuarios()
@@ -110,17 +104,16 @@ async def mensagem_cardapio_twitter(context: CallbackContext, cardapio, dia) -> 
             await postar_tweet(context, f"{modalidade} de {DIAS[dia.weekday()]}", item, log)
 
 
-async def mensagem_cardapio_meta(context: CallbackContext, cardapio, dia, url) -> None:
+async def mensagem_cardapio_meta(context: CallbackContext, cardapio, dia) -> None:
     """Publica o cardápio no Meta (Instagram/Facebook).
 
     Args:
         context: Contexto do bot Telegram.
         cardapio: Lista de tuplas (prato, modalidade).
         dia: Data do cardápio.
-        url: URL pública do servidor ngrok.
     """
     log = Log()
 
     for item, modalidade in cardapio:
         if item != "Refeição não cadastrada.":
-            await postar_meta(context, f"{modalidade} de {DIAS[dia.weekday()]}", item, log, url)
+            await postar_meta(context, f"{modalidade} de {DIAS[dia.weekday()]}", item, log)

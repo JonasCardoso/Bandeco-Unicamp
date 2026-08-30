@@ -6,6 +6,7 @@ com identidade visual personalizada, usando PIL/Pillow para manipulação de ima
 
 import datetime as dt
 import textwrap
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
@@ -107,7 +108,9 @@ def pegar_identidade_visual(titulo_cardapio: str) -> Tuple[str, str, Tuple[int, 
         )
 
 
-def gerar_imagem_postagem(titulo_cardapio: str, texto_cardapio: str, log) -> Optional[List[str]]:
+def gerar_imagem_postagem(
+    titulo_cardapio: str, texto_cardapio: str, log, diretorio_saida: Path
+) -> Optional[List[Path]]:
     """Gera imagens de postagem para cardápio e observações.
 
     Args:
@@ -120,18 +123,32 @@ def gerar_imagem_postagem(titulo_cardapio: str, texto_cardapio: str, log) -> Opt
     """
     try:
         textos_cardapio = texto_cardapio.split("Observações:")
+        diretorio_saida.mkdir(parents=True, exist_ok=True)
         lista_posts = list()
         nome_imagem_cardapio, nome_image_obs, cor_texto1, cor_texto2, cor_auxiliar = pegar_identidade_visual(
             titulo_cardapio
         )
         lista_posts.append(
             gerar_imagem_cardapio(
-                titulo_cardapio, textos_cardapio[0], nome_imagem_cardapio, cor_texto1, cor_texto2, cor_auxiliar
+                titulo_cardapio,
+                textos_cardapio[0],
+                nome_imagem_cardapio,
+                cor_texto1,
+                cor_texto2,
+                cor_auxiliar,
+                diretorio_saida,
             )
         )
         if len(textos_cardapio) == 2:
             lista_posts.append(
-                gerar_imagem_obs(titulo_cardapio, textos_cardapio[1], nome_image_obs, cor_texto1, cor_texto2)
+                gerar_imagem_obs(
+                    titulo_cardapio,
+                    textos_cardapio[1],
+                    nome_image_obs,
+                    cor_texto1,
+                    cor_texto2,
+                    diretorio_saida,
+                )
             )
         return lista_posts
 
@@ -147,7 +164,8 @@ def gerar_imagem_cardapio(
     cor_texto1: Tuple[int, ...],
     cor_texto2: Tuple[int, ...],
     cor_auxiliar: Tuple[int, ...],
-) -> str:
+    diretorio_saida: Path,
+) -> Path:
     """Gera imagem do cardápio com formatação.
 
     Args:
@@ -218,9 +236,9 @@ def gerar_imagem_cardapio(
         width=3,
     )
 
-    name = "img_cardapio_post_0.jpg"
-    img.save(name)
-    return name
+    caminho = diretorio_saida / "img_cardapio_post_0.jpg"
+    img.save(caminho, format="JPEG")
+    return caminho
 
 
 def gerar_imagem_obs(
@@ -229,7 +247,8 @@ def gerar_imagem_obs(
     nome_imagem: str,
     cor_texto1: Tuple[int, ...],
     cor_texto2: Tuple[int, ...],
-) -> str:
+    diretorio_saida: Path,
+) -> Path:
     """Gera imagem de observações com formatação.
 
     Args:
@@ -261,6 +280,6 @@ def gerar_imagem_obs(
             img_draw.text(((IMG_SIZE - w) / 2, altura_i), linha, font=fonte_texto, fill=cor_texto1)
             altura_i += h + espacamento_vertical_fonte
 
-    name = "img_obs_post_1.jpg"
-    img.save(name)
-    return name
+    caminho = diretorio_saida / "img_obs_post_1.jpg"
+    img.save(caminho, format="JPEG")
+    return caminho

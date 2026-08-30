@@ -40,7 +40,6 @@ cache_tabela_nutricional.json
 .cache_bandeco_nutricao/tbca/alimentos_meta.json
 
 # Binários portáteis ou derivados
-/ngrok
 *.exe
 *.dll
 *.dylib

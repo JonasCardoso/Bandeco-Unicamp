@@ -146,6 +146,33 @@ def get_firebase_json() -> str:
     return _require_env("FIREBASE_JSON")
 
 
+# --- Cloudflare R2 (lazy loading) ---
+
+
+@lru_cache(maxsize=None)
+def get_r2_account_id() -> str:
+    """Retorna o ID da conta Cloudflare usada pelo endpoint R2."""
+    return _require_env("R2_ACCOUNT_ID")
+
+
+@lru_cache(maxsize=None)
+def get_r2_access_key_id() -> str:
+    """Retorna o identificador da credencial S3 do R2."""
+    return _require_env("R2_ACCESS_KEY_ID")
+
+
+@lru_cache(maxsize=None)
+def get_r2_secret_access_key() -> str:
+    """Retorna o segredo da credencial S3 do R2."""
+    return _require_env("R2_SECRET_ACCESS_KEY")
+
+
+@lru_cache(maxsize=None)
+def get_r2_bucket() -> str:
+    """Retorna o bucket R2 de mídias sociais temporárias."""
+    return _require_env("R2_BUCKET")
+
+
 # --- Bot Telegram (lazy loading) ---
 
 
@@ -232,39 +259,24 @@ def get_cam_is_json() -> bool:
 
 
 @lru_cache(maxsize=None)
-def get_instagram_access_token() -> str:
-    """Retorna o Access Token do Instagram."""
-    return _require_env("INSTAGRAM_ACCESS_TOKEN")
+def get_meta_page_access_token() -> str:
+    """Retorna o Page Access Token compartilhado pelas APIs Meta."""
+    return _require_env("META_PAGE_ACCESS_TOKEN")
 
 
 @lru_cache(maxsize=None)
-def get_facebook_access_token() -> str:
-    """Retorna o Access Token do Facebook."""
-    return _require_env("FACEBOOK_ACCESS_TOKEN")
+def get_meta_graph_api_version() -> str:
+    """Retorna a versão explicitamente fixada da Graph API."""
+    return _require_env("META_GRAPH_API_VERSION")
 
 
 @lru_cache(maxsize=None)
 def get_instagram_user_id() -> str:
-    """Retorna o User ID do Instagram."""
+    """Retorna o ID da conta profissional do Instagram."""
     return _require_env("INSTAGRAM_USER_ID")
 
 
 @lru_cache(maxsize=None)
-def get_facebook_user_id() -> str:
-    """Retorna o User ID do Facebook."""
-    return _require_env("FACEBOOK_USER_ID")
-
-
-@lru_cache(maxsize=None)
-def get_graph_url() -> str:
-    """Retorna a URL da API Graph do Facebook/Instagram."""
-    return _require_env("GRAPH_URL")
-
-
-# --- Ngrok (lazy loading) ---
-
-
-@lru_cache(maxsize=None)
-def get_token_ngrok() -> str:
-    """Retorna o token de autenticação do ngrok."""
-    return _require_env("TOKEN_NGROK")
+def get_facebook_page_id() -> str:
+    """Retorna o ID da Página do Facebook."""
+    return _require_env("FACEBOOK_PAGE_ID")

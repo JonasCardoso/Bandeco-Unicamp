@@ -142,12 +142,14 @@ def mock_env_vars(monkeypatch):
         "CAM_RA": "ra",
         "CAM_RS": "rs",
         "CAM_IS_JSON": "false",
-        "INSTAGRAM_ACCESS_TOKEN": "test_ig_token",
-        "FACEBOOK_ACCESS_TOKEN": "test_fb_token",
+        "META_PAGE_ACCESS_TOKEN": "test_meta_page_token",
+        "META_GRAPH_API_VERSION": "v26.0",
         "INSTAGRAM_USER_ID": "123456789",
-        "FACEBOOK_USER_ID": "987654321",
-        "GRAPH_URL": "https://graph.facebook.com/v18.0/",
-        "TOKEN_NGROK": "test_ngrok_token",
+        "FACEBOOK_PAGE_ID": "987654321",
+        "R2_ACCOUNT_ID": "test-r2-account",
+        "R2_ACCESS_KEY_ID": "test-r2-access",
+        "R2_SECRET_ACCESS_KEY": "test-r2-secret",
+        "R2_BUCKET": "test-r2-bucket",
     }
     monkeypatch.setattr(os.environ, "clear", lambda: None)
     for key, value in env.items():

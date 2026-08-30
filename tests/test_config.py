@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from core.constants import DIAS
-from integrations.ngrok import Ngrok
 from interfaces.telegram.keyboards import teclado_dias_semana, teclado_modalidades
 from modules.balance.crypto import criptografar_senha
 from modules.preferences.rules import verificar_atividade
@@ -45,36 +44,6 @@ class TestTeclado:
         for botao in resultado:
             assert isinstance(botao, list)
             assert len(botao) == 1
-
-
-class TestNgrokService:
-    """Testes para ngrok_servico.py."""
-
-    def test_ngrok_inicializacao(self):
-        ngrok = Ngrok()
-
-        # Atributos devem ser de instância, não de classe
-        assert hasattr(ngrok, "ngrok")
-        assert hasattr(ngrok, "httpd")
-        assert hasattr(ngrok, "_lock")
-        assert hasattr(ngrok, "_porta")
-
-        # Valores iniciais devem ser None/0
-        assert ngrok.ngrok is None
-        assert ngrok.httpd is None
-        assert ngrok._porta == 8000
-
-    def test_cleanup_reentrante_nao_deadlocka(self):
-        ngrok = Ngrok()
-        ngrok.ngrok = __import__("unittest.mock").mock.MagicMock()
-        log = __import__("unittest.mock").mock.MagicMock()
-        with ngrok._lock:
-            ngrok.desligar_servidor(log)
-        assert ngrok.ngrok is None
-
-    def test_ngrok_context_manager(self):
-        with Ngrok() as ngrok:
-            assert isinstance(ngrok, Ngrok)
 
 
 class TestSenhaService:
@@ -238,7 +207,10 @@ class TestFirebaseImplementacaoReal:
         monkeypatch.setattr(
             config,
             "Settings",
-            lambda: SimpleNamespace(database_url_firebase="https://db.test", firebase_json='{"id": 1}'),
+            lambda: SimpleNamespace(
+                database_url_firebase="https://db.test",
+                firebase_json='{"id": 1}',
+            ),
         )
         config.credentials.Certificate.reset_mock()
         config.firebase_admin.initialize_app.reset_mock()

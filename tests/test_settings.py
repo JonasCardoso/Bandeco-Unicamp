@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+from pydantic import ValidationError
+
 
 class TestSettingsInitialization:
     """Testes para inicializacao da classe Settings."""
@@ -70,14 +73,34 @@ class TestSettingsProperties:
         assert s.ACCESS_TOKEN_TWITTER == "test_access"
         assert s.ACCESS_TOKEN_SECRET_TWITTER == "test_access_secret"
 
-    def test_instagram_facebook_properties(self):
+    def test_configuracao_meta_v26(self):
         from core.settings import Settings
 
         s = Settings()
-        assert s.INSTAGRAM_ACCESS_TOKEN == "test_ig_token"
-        assert s.FACEBOOK_ACCESS_TOKEN == "test_fb_token"
-        assert s.INSTAGRAM_USER_ID == "123456789"
-        assert s.FACEBOOK_USER_ID == "987654321"
+        assert s.meta_page_access_token == "test_meta_page_token"
+        assert s.meta_graph_api_version == "v26.0"
+        assert s.instagram_user_id == "123456789"
+        assert s.facebook_page_id == "987654321"
+        assert s.r2_account_id == "test-r2-account"
+        assert s.r2_access_key_id == "test-r2-access"
+        assert s.r2_secret_access_key == "test-r2-secret"
+        assert s.r2_bucket == "test-r2-bucket"
+
+    def test_segredos_nao_aparecem_no_repr(self):
+        from core.settings import Settings
+
+        s = Settings()
+        assert "test_meta_page_token" not in repr(s)
+        assert "service_account" not in repr(s)
+        assert "test-r2-access" not in repr(s)
+        assert "test-r2-secret" not in repr(s)
+
+    def test_versao_meta_nao_pode_ser_alterada(self, monkeypatch):
+        from core.settings import Settings
+
+        monkeypatch.setenv("META_GRAPH_API_VERSION", "v25.0")
+        with pytest.raises(ValidationError):
+            Settings()
 
 
 class TestSettingsSingleton:
@@ -138,12 +161,6 @@ class TestSettingsOptionalFields:
         s = Settings()
         # FIREBASE_JSON vem do conftest
         assert s.firebase_json is not None
-
-    def test_token_ngrok_optional(self):
-        from core.settings import Settings
-
-        s = Settings()
-        assert s.token_ngrok == "test_ngrok_token"
 
     def test_hf_token_opcional_nao_e_exposto(self, monkeypatch):
         from core.settings import Settings
