@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from nutrition import rendering
+from modules.nutrition import rendering
 
 
 def test_gerar_imagem_publica_destino_e_remove_temporarios(tmp_path, monkeypatch):

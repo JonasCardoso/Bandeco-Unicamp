@@ -1,10 +1,10 @@
-"""Testes unitários para meta_servico.py."""
+"""Testes unitários para integrations.social.meta.py."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from meta_servico import (
+from integrations.social.meta import (
     criar_carrossel_instagram,
     criar_container_instagram,
     postar_meta,
@@ -18,7 +18,7 @@ class TestCriarContainerInstagram:
 
     def test_cria_container_com_sucesso(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"id": "media_123456"}'
@@ -32,7 +32,7 @@ class TestCriarContainerInstagram:
 
     def test_cria_container_falha_retorna_false(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 500
             mock_response.text = '{"error": "Server error"}'
@@ -49,7 +49,7 @@ class TestCriarCarrosselInstagram:
 
     def test_cria_carrossel_com_sucesso(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"id": "carousel_789"}'
@@ -61,7 +61,7 @@ class TestCriarCarrosselInstagram:
 
     def test_cria_carrossel_falha_retorna_false(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 400
             mock_response.text = '{"error": "Invalid request"}'
@@ -77,7 +77,7 @@ class TestPostarTimelineInstagram:
 
     def test_publica_na_timeline_com_sucesso(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_post.return_value = mock_response
@@ -88,7 +88,7 @@ class TestPostarTimelineInstagram:
 
     def test_publica_na_timeline_falha_retorna_false(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 500
             mock_post.return_value = mock_response
@@ -103,7 +103,7 @@ class TestPostarTimelineFacebook:
 
     def test_publica_no_facebook_com_sucesso(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_post.return_value = mock_response
@@ -114,7 +114,7 @@ class TestPostarTimelineFacebook:
 
     def test_publica_no_facebook_falha_retorna_false(self):
         mock_log = MagicMock()
-        with patch("meta_servico.req.post") as mock_post:
+        with patch("integrations.social.meta.req.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 403
             mock_post.return_value = mock_response
@@ -130,9 +130,9 @@ class TestPostarMetaIntegration:
     @pytest.mark.asyncio
     async def test_posta_meta_com_sucesso(self, mock_context):
         mock_log = MagicMock()
-        with patch("meta_servico.gerar_imagem_postagem") as mock_gerar:
-            with patch("meta_servico.postar_instagram", new_callable=AsyncMock) as mock_ig:
-                with patch("meta_servico.postar_facebook", new_callable=AsyncMock) as mock_fb:
+        with patch("integrations.social.meta.gerar_imagem_postagem") as mock_gerar:
+            with patch("integrations.social.meta.postar_instagram", new_callable=AsyncMock) as mock_ig:
+                with patch("integrations.social.meta.postar_facebook", new_callable=AsyncMock) as mock_fb:
                     mock_gerar.return_value = ["img_cardapio_post_0.jpg"]
                     mock_ig.return_value = None
                     mock_fb.return_value = None
@@ -148,9 +148,9 @@ class TestPostarMetaIntegration:
     @pytest.mark.asyncio
     async def test_posta_meta_sem_imagem_retorna(self, mock_context):
         mock_log = MagicMock()
-        with patch("meta_servico.gerar_imagem_postagem") as mock_gerar:
-            with patch("meta_servico.postar_instagram", new_callable=AsyncMock) as mock_ig:
-                with patch("meta_servico.postar_facebook", new_callable=AsyncMock) as mock_fb:
+        with patch("integrations.social.meta.gerar_imagem_postagem") as mock_gerar:
+            with patch("integrations.social.meta.postar_instagram", new_callable=AsyncMock) as mock_ig:
+                with patch("integrations.social.meta.postar_facebook", new_callable=AsyncMock) as mock_fb:
                     mock_gerar.return_value = None
 
                     await postar_meta(mock_context, "Almoço Tradicional", "Frango grelhado", mock_log, "http://url.com")

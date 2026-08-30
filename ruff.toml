@@ -12,11 +12,11 @@ ignore = [
 
 [lint.isort]
 known-first-party = [
-    "bandeco",
-    "comando",
-    "config",
-    "cardapio",
-    "util",
-    "log",
-    "servico",
+    "app",
+    "core",
+    "integrations",
+    "interfaces",
+    "modules",
+    "presentation",
+    "shared",
 ]

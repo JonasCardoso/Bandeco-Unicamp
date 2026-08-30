@@ -2,7 +2,7 @@
 
 import datetime as dt
 
-from cam import verificar_atualizacao
+from modules.cameras.service import verificar_atualizacao
 
 
 def test_atualizacao_antes_de_um_minuto():

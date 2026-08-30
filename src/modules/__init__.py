@@ -1,0 +1,1 @@
+"""Módulos funcionais da aplicação."""

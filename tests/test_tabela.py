@@ -5,19 +5,30 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-import tabela
-from nutrition import cache as nutrition_cache
-from tabela import (
+from modules.nutrition import cache as nutrition_cache
+from modules.nutrition import matching as nutrition_matching
+from modules.nutrition import pipeline as tabela
+from modules.nutrition.cache import DadosNutricionaisIndisponiveis, validar_cache_gravavel
+from modules.nutrition.calculation import estimar_porcoes_item, processar_cardapio
+from modules.nutrition.matching import (
+    TEMPO_OCIOSO_MODELOS_SEGUNDOS,
+    PipelineNutricional,
+    inicializar_pipeline_nutricional,
+    obter_pipeline,
+)
+from modules.nutrition.parser import (
     CARDAPIO_EXEMPLO,
+    _titulo,
+    aglutinar_semantica,
+    chave_texto,
+    extrair_itens,
+    normalizar,
+)
+from modules.nutrition.pipeline import (
     _carregar_cache_tabela,
     _projetar_formato_antigo,
     _salvar_cache_tabela,
-    aglutinar_semantica,
-    estimar_porcoes_item,
-    extrair_itens,
     filtrar_csv,
-    normalizar,
-    processar_cardapio,
 )
 
 
@@ -63,7 +74,7 @@ class PipelineFalso:
         self.itens = list(itens)
 
     def buscar_referencia(self, query, contexto=None):
-        if tabela.chave_texto(query) == "fruta":
+        if chave_texto(query) == "fruta":
             return match(query, "categoria_generica")
         return match(query)
 
@@ -177,7 +188,7 @@ class TestPorcoesTotais:
     def test_descarga_modelos_somente_quando_ociosos(self):
         marcador = object()
         base_taco = [{"nome": "arroz"}]
-        pipeline = tabela.PipelineNutricional(
+        pipeline = PipelineNutricional(
             base_taco,
             [],
             marcador,
@@ -189,7 +200,7 @@ class TestPorcoesTotais:
             marcador,
             {},
         )
-        assert tabela.TEMPO_OCIOSO_MODELOS_SEGUNDOS == 300
+        assert TEMPO_OCIOSO_MODELOS_SEGUNDOS == 300
         pipeline._usos_modelos = 1
         pipeline._descarregar_modelos_se_ocioso()
         assert pipeline.embedding_model is marcador
@@ -216,23 +227,23 @@ class TestInicializacaoPipeline:
             return criar_temporario(*args, **kwargs)
 
         monkeypatch.setattr(nutrition_cache.tempfile, "NamedTemporaryFile", negar_escrita)
-        with pytest.raises(tabela.DadosNutricionaisIndisponiveis, match="cache não gravável") as erro:
-            tabela.validar_cache_gravavel()
+        with pytest.raises(DadosNutricionaisIndisponiveis, match="cache não gravável") as erro:
+            validar_cache_gravavel()
         assert str(cache) in str(erro.value)
         assert "uid=" in str(erro.value)
 
     def test_inicializacao_reutiliza_singleton(self, monkeypatch):
         pipeline = object()
         carregamentos = []
-        monkeypatch.setattr(tabela, "_PIPELINE", None)
+        monkeypatch.setattr(nutrition_matching, "_PIPELINE", None)
         monkeypatch.setattr(
-            tabela.PipelineNutricional,
+            PipelineNutricional,
             "carregar",
             staticmethod(lambda: carregamentos.append(1) or pipeline),
         )
-        assert tabela.inicializar_pipeline_nutricional() is pipeline
-        assert tabela.inicializar_pipeline_nutricional() is pipeline
-        assert tabela.obter_pipeline() is pipeline
+        assert inicializar_pipeline_nutricional() is pipeline
+        assert inicializar_pipeline_nutricional() is pipeline
+        assert obter_pipeline() is pipeline
         assert carregamentos == [1]
 
 
@@ -269,11 +280,11 @@ class TestHistoricoReal:
             soup = BeautifulSoup(arquivo.read_text(encoding="utf-8"), "html.parser")
             for elemento in soup.select("div.message div.text"):
                 texto = elemento.get_text("\n", strip=True)
-                if not tabela._titulo(texto.splitlines()[0] if texto else ""):
+                if not _titulo(texto.splitlines()[0] if texto else ""):
                     continue
                 itens = extrair_itens(texto)
                 assert itens
-                assert all(not tabela._titulo(i["texto"]) for i in itens)
+                assert all(not _titulo(i["texto"]) for i in itens)
                 assert all("observações:" not in i["texto"].lower() for i in itens)
                 total += 1
         assert total == 6452

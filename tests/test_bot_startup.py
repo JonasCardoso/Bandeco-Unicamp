@@ -2,13 +2,14 @@
 
 import importlib
 import logging
+import runpy
 from unittest.mock import MagicMock
 
 import pytest
 
 
 def _bot():
-    return importlib.import_module("bot")
+    return importlib.import_module("app.bootstrap")
 
 
 def _configurar_startup(monkeypatch, bot):
@@ -64,3 +65,13 @@ def test_falha_do_firebase_impede_pipeline(monkeypatch):
     with pytest.raises(SystemExit) as erro:
         bot.main()
     assert erro.value.code == 1
+
+
+def test_entrypoint_delega_para_bootstrap(monkeypatch):
+    bot = _bot()
+    chamadas = []
+    monkeypatch.setattr(bot, "main", lambda: chamadas.append("main"))
+
+    runpy.run_module("app", run_name="__main__")
+
+    assert chamadas == ["main"]

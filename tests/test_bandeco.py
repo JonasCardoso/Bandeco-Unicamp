@@ -1,10 +1,10 @@
-"""Testes unitários para bandeco.py (processamento de cardápios)."""
+"""Testes unitários para integrations.unicamp.menu_client.py (processamento de cardápios)."""
 
 from unittest.mock import MagicMock
 
 import requests
 
-from bandeco import abreviacoes, comida, comida_site_json, comida_site_prefeitura
+from integrations.unicamp.menu_client import abreviacoes, comida, comida_site_json, comida_site_prefeitura
 
 
 class TestAbreviacoes:
@@ -34,17 +34,17 @@ class TestComidaFallback:
 
     def test_comida_retorna_none_se_ambas_as_fontes_falharem(self, monkeypatch):
         # Mock ambas as funções para retornar None
-        monkeypatch.setattr("bandeco.comida_site_prefeitura", lambda data: None)
-        monkeypatch.setattr("bandeco.comida_site_json", lambda data: None)
+        monkeypatch.setattr("integrations.unicamp.menu_client.comida_site_prefeitura", lambda data: None)
+        monkeypatch.setattr("integrations.unicamp.menu_client.comida_site_json", lambda data: None)
 
         resultado = comida("2024-01-15")
         assert resultado is None
 
     def test_comida_usa_segunda_fonte_se_primeira_falhar(self, monkeypatch):
         # Primeira fonte falha, segunda succeeds
-        monkeypatch.setattr("bandeco.comida_site_prefeitura", lambda data: None)
+        monkeypatch.setattr("integrations.unicamp.menu_client.comida_site_prefeitura", lambda data: None)
         monkeypatch.setattr(
-            "bandeco.comida_site_json",
+            "integrations.unicamp.menu_client.comida_site_json",
             lambda data: ["Almoço tradicional\nFeijão\nArroz\n"],
         )
 
@@ -58,8 +58,8 @@ class TestComidaSitePrefeitura:
 
     def test_retry_em_erro_de_rede(self, monkeypatch):
         chamadas = MagicMock(side_effect=requests.RequestException("rede"))
-        monkeypatch.setattr("bandeco.req.get", chamadas)
-        monkeypatch.setattr("util.time.sleep", lambda _: None)
+        monkeypatch.setattr("integrations.unicamp.menu_client.req.get", chamadas)
+        monkeypatch.setattr("shared.retry.time.sleep", lambda _: None)
         assert comida_site_prefeitura("2024-01-15") is None
         assert chamadas.call_count == 3
 
@@ -67,7 +67,7 @@ class TestComidaSitePrefeitura:
         mock_response = MagicMock()
         mock_response.text = "Não existe cardápio cadastrado no momento !"
         mock_response.status_code = 200
-        monkeypatch.setattr("bandeco.req.get", lambda *args, **kwargs: mock_response)
+        monkeypatch.setattr("integrations.unicamp.menu_client.req.get", lambda *args, **kwargs: mock_response)
 
         resultado = comida_site_prefeitura("2024-01-15")
         assert resultado is None
@@ -76,7 +76,7 @@ class TestComidaSitePrefeitura:
         mock_response = MagicMock()
         mock_response.text = "Erro"
         mock_response.status_code = 500
-        monkeypatch.setattr("bandeco.req.get", lambda *args, **kwargs: mock_response)
+        monkeypatch.setattr("integrations.unicamp.menu_client.req.get", lambda *args, **kwargs: mock_response)
 
         resultado = comida_site_prefeitura("2024-01-15")
         assert resultado is None
@@ -89,7 +89,7 @@ class TestComidaSiteJson:
         mock_response = MagicMock()
         mock_response.text = "Server-unavailable!"
         mock_response.status_code = 503
-        monkeypatch.setattr("bandeco.req.post", lambda *args, **kwargs: mock_response)
+        monkeypatch.setattr("integrations.unicamp.menu_client.req.post", lambda *args, **kwargs: mock_response)
 
         resultado = comida_site_json("2024-01-15")
         assert resultado is None

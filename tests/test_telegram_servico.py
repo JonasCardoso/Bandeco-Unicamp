@@ -1,11 +1,11 @@
-"""Testes unitários para telegram_servico.py."""
+"""Testes unitários para interfaces.telegram.messaging.py."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 from telegram import ReplyKeyboardMarkup
 
-from telegram_servico import (
+from interfaces.telegram.messaging import (
     deletar_mensagem,
     mandar_imagem,
     mandar_mensagem,
@@ -62,7 +62,7 @@ class TestMandarImagem:
         fake_image = tmp_path / "test.jpg"
         fake_image.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
 
-        with patch("telegram_servico.pathlib.Path.resolve", return_value=str(tmp_path)):
+        with patch("interfaces.telegram.messaging.pathlib.Path.resolve", return_value=str(tmp_path)):
             await mandar_imagem(mock_context, 123456, "test")
 
         mock_context.bot.send_photo.assert_called_once()
@@ -104,7 +104,7 @@ class TestMandarImagemErrorHandling:
     @pytest.mark.asyncio
     async def test_mandar_imagem_erro_arquivo_nao_encontrado(self, mock_context):
         # Tenta enviar imagem inexistente - não deve propagar erro
-        with patch("telegram_servico.pathlib.Path.resolve", return_value="/tmp"):
+        with patch("interfaces.telegram.messaging.pathlib.Path.resolve", return_value="/tmp"):
             await mandar_imagem(mock_context, 123456, "arquivo_inexistente_12345")
 
         # A função não deve levantar exceção

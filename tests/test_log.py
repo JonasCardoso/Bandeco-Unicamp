@@ -2,7 +2,7 @@
 
 import pytest
 
-from log import Log, LogLevel
+from interfaces.telegram.logging import Log, LogLevel
 
 
 class TestLogLevel:

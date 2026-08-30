@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from nutrition import sources
-from nutrition.cache import DadosNutricionaisIndisponiveis
+from modules.nutrition import sources
+from modules.nutrition.cache import DadosNutricionaisIndisponiveis
 
 
 @pytest.mark.parametrize(

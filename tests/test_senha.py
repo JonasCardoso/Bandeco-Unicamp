@@ -1,9 +1,9 @@
 # =============================================================================
-# Testes para funções de criptografia de senhas (senha.py)
+# Testes para funções de criptografia de senhas (modules.balance.service.py)
 # =============================================================================
 import base64
 
-from senha import (
+from modules.balance.crypto import (
     criptografar_senha,
     encodeB64,
     gerar_senha_MD5,

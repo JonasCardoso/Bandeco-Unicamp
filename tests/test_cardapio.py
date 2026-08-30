@@ -1,7 +1,7 @@
 """Testes unitários para cardapio.py (lógica pura de processamento de cardápio)."""
 
-from cardapio import formatar_cardapio_para_mensagem, modalidade_com_cardapio
-from util import MODALIDADES
+from core.constants import MODALIDADES
+from modules.menu.service import formatar_cardapio_para_mensagem, modalidade_com_cardapio
 
 
 class TestModalidadeComCardapio:

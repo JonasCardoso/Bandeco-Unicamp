@@ -2,7 +2,7 @@
 # Testes para geração de teclados (teclado.py)
 # =============================================================================
 
-from teclado import (
+from interfaces.telegram.keyboards import (
     teclado_contato,
     teclado_dias_semana,
     teclado_modalidades,

@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-import valor
+from integrations.unicamp import price_client as valor
 
 
 def test_extrair_tabela_html(monkeypatch):

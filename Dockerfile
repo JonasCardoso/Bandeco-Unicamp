@@ -26,6 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
 ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH=/bandeco/src \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MPLCONFIGDIR=/tmp/matplotlib \
@@ -54,4 +55,4 @@ COPY --chown=bandeco:bandeco .cache_bandeco_nutricao/tbca/alimentos.txt ./.cache
 
 USER bandeco
 ENTRYPOINT ["python"]
-CMD ["src/bot.py"]
+CMD ["-m", "app"]

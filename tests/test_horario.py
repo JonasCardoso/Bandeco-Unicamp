@@ -1,10 +1,10 @@
-"""Testes unitários para horario.py (consulta de horários de funcionamento)."""
+"""Testes unitários para integrations.unicamp.schedule_client.py (consulta de horários de funcionamento)."""
 
 from unittest.mock import MagicMock, patch
 
 import requests as req
 
-from horario import horario_funcionamento
+from integrations.unicamp.schedule_client import horario_funcionamento
 
 
 class TestHorarioFuncionamento:
@@ -27,7 +27,7 @@ class TestHorarioFuncionamento:
         mock_response = MagicMock()
         mock_response.text = html_mock
 
-        with patch("horario.requests.get", return_value=mock_response):
+        with patch("integrations.unicamp.schedule_client.requests.get", return_value=mock_response):
             result = horario_funcionamento()
 
         assert result is not None
@@ -39,15 +39,18 @@ class TestHorarioFuncionamento:
         mock_response = MagicMock()
         mock_response.text = html_mock
 
-        with patch("horario.requests.get", return_value=mock_response):
+        with patch("integrations.unicamp.schedule_client.requests.get", return_value=mock_response):
             result = horario_funcionamento()
 
         assert result is None
 
     def test_retorna_none_em_erro_de_rede(self):
         with (
-            patch("horario.requests.get", side_effect=req.RequestException("Erro de rede")) as requisicao,
-            patch("util.time.sleep"),
+            patch(
+                "integrations.unicamp.schedule_client.requests.get",
+                side_effect=req.RequestException("Erro de rede"),
+            ) as requisicao,
+            patch("shared.retry.time.sleep"),
         ):
             result = horario_funcionamento()
 
@@ -59,7 +62,7 @@ class TestHorarioFuncionamento:
         mock_response.text = "Erro 500"
         mock_response.status_code = 500
 
-        with patch("horario.requests.get", return_value=mock_response):
+        with patch("integrations.unicamp.schedule_client.requests.get", return_value=mock_response):
             result = horario_funcionamento()
 
         assert result is None

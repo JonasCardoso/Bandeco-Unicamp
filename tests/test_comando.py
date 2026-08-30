@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import comando
+from interfaces.telegram import handlers as comando
 
 
 class Reply:

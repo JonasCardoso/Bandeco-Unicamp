@@ -8,10 +8,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ngrok_servico import Ngrok
-from senha import criptografar_senha
-from teclado import teclado_dias_semana, teclado_modalidades
-from util import DIAS, verificar_atividade
+from core.constants import DIAS
+from integrations.ngrok import Ngrok
+from interfaces.telegram.keyboards import teclado_dias_semana, teclado_modalidades
+from modules.balance.crypto import criptografar_senha
+from modules.preferences.rules import verificar_atividade
 
 
 class TestConfigClass:
@@ -77,7 +78,7 @@ class TestNgrokService:
 
 
 class TestSenhaService:
-    """Testes para senha.py."""
+    """Testes para modules.balance.service.py."""
 
     def test_criptografar_senha_retorna_tupla_3_elementos(self):
         resultado = criptografar_senha("senha123")
@@ -199,7 +200,7 @@ class TestConfigClassExtended:
 
     def test_criar_usuario_padrao(self):
         # Verifica que a classe existe e tem os métodos esperados
-        import config
+        from integrations.firebase import user_repository as config
 
         assert hasattr(config.Config, "criar_usuario")
         assert hasattr(config.Config, "atualizar_usuario")
@@ -210,7 +211,7 @@ class TestConfigClassExtended:
 
 class TestFirebaseImplementacaoReal:
     def test_ler_json_valido_e_invalido(self, tmp_path):
-        import config
+        from integrations.firebase import user_repository as config
 
         valido = tmp_path / "valido.json"
         valido.write_text('{"project_id": "projeto"}', encoding="utf-8")
@@ -221,7 +222,7 @@ class TestFirebaseImplementacaoReal:
         assert config._ler_json(tmp_path / "ausente.json") is None
 
     def test_credenciais_aceitam_json_e_caminho(self, tmp_path, monkeypatch):
-        import config
+        from integrations.firebase import user_repository as config
 
         monkeypatch.setattr(config, "Settings", lambda: SimpleNamespace(firebase_json='{"id": 1}'))
         assert config._get_firebase_credentials_dict() == {"id": 1}
@@ -231,7 +232,7 @@ class TestFirebaseImplementacaoReal:
         assert config._get_firebase_credentials_dict() == {"id": 2}
 
     def test_inicializar_firebase_e_idempotente(self, monkeypatch):
-        import config
+        from integrations.firebase import user_repository as config
 
         config.firebase_admin._apps = []
         monkeypatch.setattr(
@@ -248,7 +249,7 @@ class TestFirebaseImplementacaoReal:
         config.firebase_admin.initialize_app.assert_called_once()
 
     def test_crud_e_usuario_padrao(self):
-        import config
+        from integrations.firebase import user_repository as config
 
         ref = MagicMock()
         filho = ref.child.return_value
@@ -263,7 +264,7 @@ class TestFirebaseImplementacaoReal:
         assert repositorio.pegar_usuario("7") == {"cafe": 1}
 
     def test_leituras_invalidas_preservam_fallback(self):
-        import config
+        from integrations.firebase import user_repository as config
 
         ref = MagicMock()
         ref.get.return_value = [["não é mapping"]]

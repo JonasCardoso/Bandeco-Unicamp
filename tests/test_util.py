@@ -6,17 +6,11 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from settings import REQUIRED_ENV_VARS
-from util import (
-    DIAS,
-    MODALIDADES,
-    _get_env,
-    _require_env,
-    log_env_validation,
-    retry,
-    validar_env_vars,
-    verificar_atividade,
-)
+from core.config import _get_env, _require_env, log_env_validation, validar_env_vars
+from core.constants import DIAS, MODALIDADES
+from core.settings import REQUIRED_ENV_VARS
+from modules.preferences.rules import verificar_atividade
+from shared.retry import retry
 
 
 class TestVerificarAtividade:
@@ -81,7 +75,7 @@ class TestRetryDecorator:
         async def sem_espera(_):
             return None
 
-        monkeypatch.setattr("util.asyncio.sleep", sem_espera)
+        monkeypatch.setattr("shared.retry.asyncio.sleep", sem_espera)
 
         @retry(max_attempts=2, delay=0.01, exceptions=(ValueError,))
         async def instavel():

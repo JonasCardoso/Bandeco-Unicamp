@@ -153,7 +153,7 @@ def mock_env_vars(monkeypatch):
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
-    from settings import clear_settings_cache
+    from core.settings import clear_settings_cache
 
     clear_settings_cache()
     yield
