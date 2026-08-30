@@ -43,9 +43,13 @@ def gerar_titulo(titulo_cardapio: str, nome_imagem: str, cor_texto2: Tuple[int, 
     altura_f = altura_i
 
     for wrap_texto in wrap_textos:
-        w, h = get_font_size(fonte_titulo, wrap_texto)
+        bbox = fonte_titulo.getbbox(wrap_texto)
+        w = int(bbox[2] - bbox[0])
         img_draw.text(((img.size[0] - w) / 2, altura_f), wrap_texto, font=fonte_titulo, fill=cor_texto2)
-        altura_f += h + espacamento_vertical_fonte
+        # ``getsize()`` incluía no avanço a margem superior da fonte. Ao
+        # migrar para a altura de ``getbbox()`` (bottom - top), essa margem
+        # deixou de existir e as linhas passaram a encostar visualmente.
+        altura_f += int(bbox[3]) + espacamento_vertical_fonte
 
     return img
 

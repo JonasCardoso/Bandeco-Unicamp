@@ -92,3 +92,15 @@ def test_falha_na_inicializacao_e_convertida(tmp_path, monkeypatch):
     with pytest.raises(MediaStorageError, match="Cloudflare R2"):
         with hospedar_imagens(_imagens(tmp_path)):
             pytest.fail("não deve entrar no contexto")
+
+
+def test_cliente_r2_e_fechado_apos_contexto(tmp_path, monkeypatch):
+    cliente = MagicMock()
+    cliente.generate_presigned_url.return_value = "https://r2/url-assinada"
+    monkeypatch.setattr(r2_storage, "_novo_cliente", lambda: cliente)
+    monkeypatch.setattr(r2_storage, "get_r2_bucket", lambda: "bucket-teste")
+
+    with hospedar_imagens(_imagens(tmp_path)[:1]):
+        pass
+
+    cliente.close.assert_called_once()

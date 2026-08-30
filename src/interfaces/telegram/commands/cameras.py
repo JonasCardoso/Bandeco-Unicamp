@@ -1,5 +1,6 @@
 """Comandos de captura das câmeras dos restaurantes."""
 
+import asyncio
 from functools import lru_cache
 
 from telegram import Update
@@ -17,16 +18,16 @@ def get_cam() -> Cam:
 
 
 async def ru(update: Update, context: CallbackContext):
-    get_cam().pegar_imagem("ru")
+    await asyncio.to_thread(get_cam().pegar_imagem, "ru")
     await mandar_imagem(context, update.effective_chat.id, get_cam_ru_a())
     await mandar_imagem(context, update.effective_chat.id, get_cam_ru_b())
 
 
 async def ra(update: Update, context: CallbackContext):
-    get_cam().pegar_imagem("ra")
+    await asyncio.to_thread(get_cam().pegar_imagem, "ra")
     await mandar_imagem(context, update.effective_chat.id, get_cam_ra())
 
 
 async def rs(update: Update, context: CallbackContext):
-    get_cam().pegar_imagem("rs")
+    await asyncio.to_thread(get_cam().pegar_imagem, "rs")
     await mandar_imagem(context, update.effective_chat.id, get_cam_rs())

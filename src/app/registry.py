@@ -17,6 +17,7 @@ from interfaces.telegram.commands.preferences import (
 )
 from interfaces.telegram.commands.social import facebook, instagram, twitter
 from interfaces.telegram.handlers import tabela
+from interfaces.telegram.logging import tratar_erro_aplicacao
 
 
 def register_handlers(application, command_handler, message_handler) -> None:
@@ -49,3 +50,4 @@ def register_handlers(application, command_handler, message_handler) -> None:
         application.add_handler(command_handler(nome, callback))
     application.add_handler(message_handler(filters.TEXT, mensagem))
     application.add_handler(message_handler(filters.CONTACT, mensagem_contato))
+    application.add_error_handler(tratar_erro_aplicacao)

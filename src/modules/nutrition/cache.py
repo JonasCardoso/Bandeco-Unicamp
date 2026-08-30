@@ -6,6 +6,8 @@ import os
 import tempfile
 from pathlib import Path
 
+from core.settings import get_settings
+
 CACHE_DIR = Path(".cache_bandeco_nutricao")
 TACO_CACHE = CACHE_DIR / "taco_composicao.csv"
 TBCA_DIR = CACHE_DIR / "tbca"
@@ -25,7 +27,7 @@ def criar_diretorios_cache() -> None:
 
 def validar_cache_gravavel() -> None:
     """Cria e testa os diretórios persistentes antes de carregar os modelos."""
-    hf_home = Path(os.environ.get("HF_HOME", CACHE_DIR / "huggingface"))
+    hf_home = get_settings().hf_home or CACHE_DIR / "huggingface"
     caminhos = (CACHE_DIR, TBCA_DIR, CATALOGO_DIR, hf_home)
     uid = getattr(os, "getuid", lambda: "indisponível")()
 

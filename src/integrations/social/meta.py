@@ -7,6 +7,7 @@ import json
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -105,10 +106,16 @@ class MetaClient:
         self.instagram_user_id = instagram_user_id
         self.facebook_page_id = facebook_page_id
         self.base_url = f"https://graph.facebook.com/{api_version}"
-        self.session = session or requests.Session()
+        self._owns_session = session is None
+        self.session = session if session is not None else requests.Session()
         self.headers = {"Authorization": f"Bearer {access_token}"}
         self.sleep = sleep
         self.monotonic = monotonic
+
+    def close(self) -> None:
+        """Fecha apenas a sessão criada internamente pelo cliente."""
+        if self._owns_session:
+            self.session.close()
 
     def _post(
         self,
@@ -239,7 +246,7 @@ def _registrar_falha(log, plataforma: str, erro: BaseException) -> None:
         detalhe = str(erro)
     else:
         detalhe = type(erro).__name__
-    log.adicionar_log(f"meta.{plataforma} - falha recuperável - {detalhe}")
+    log.error(detalhe, component=f"meta.{plataforma}", event="publish_failed")
 
 
 def _postar_meta_sync(titulo: str, texto: str, log) -> None:
@@ -249,7 +256,7 @@ def _postar_meta_sync(titulo: str, texto: str, log) -> None:
         _registrar_falha(log, "config", erro)
         return
 
-    with tempfile.TemporaryDirectory(prefix="bandeco-meta-") as diretorio:
+    with closing(cliente), tempfile.TemporaryDirectory(prefix="bandeco-meta-") as diretorio:
         imagens = gerar_imagem_postagem(titulo, texto, log, Path(diretorio))
         if not imagens:
             return

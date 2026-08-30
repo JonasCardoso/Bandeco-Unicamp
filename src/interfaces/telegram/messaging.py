@@ -1,31 +1,26 @@
-"""Serviços de comunicação com a API do Telegram.
+"""Serviços resilientes de comunicação com a API do Telegram."""
 
-Este módulo fornece funções assíncronas para envio de mensagens e imagens
-para o bot do Telegram, incluindo suporte para teclados interativos.
-"""
+from __future__ import annotations
 
 import logging
 import pathlib
 
 from telegram import ReplyKeyboardMarkup
+from telegram.error import TelegramError
 from telegram.ext import CallbackContext
 
 logger = logging.getLogger(__name__)
 
 
 async def mandar_mensagem(
-    context: CallbackContext, chat_id, texto, reply_markup=None, reply_to_message_id=None, parse_mode="Markdown"
-):
-    """Envia uma mensagem de texto para um chat.
-
-    Args:
-        context: Contexto do bot Telegram.
-        chat_id: ID do chat destino.
-        texto: Texto da mensagem.
-        reply_markup: Teclado de resposta opcional.
-        reply_to_message_id: ID da mensagem para responder (opcional).
-        parse_mode: Modo de formatação (Markdown ou HTML).
-    """
+    context: CallbackContext,
+    chat_id,
+    texto,
+    reply_markup=None,
+    reply_to_message_id=None,
+    parse_mode="Markdown",
+) -> bool:
+    """Envia texto e informa se a API confirmou a operação."""
     try:
         await context.bot.send_message(
             chat_id=chat_id,
@@ -34,33 +29,28 @@ async def mandar_mensagem(
             reply_markup=reply_markup,
             reply_to_message_id=reply_to_message_id,
         )
+        return True
+    except TelegramError:
+        logger.warning("Telegram recusou mensagem para o chat %s.", chat_id, exc_info=True)
     except Exception:
-        logger.exception("Falha ao enviar mensagem para %s", chat_id)
+        logger.exception("Falha inesperada ao enviar mensagem para o chat %s.", chat_id)
+    return False
 
 
-async def deletar_mensagem(context: CallbackContext, chat_id, message_id):
-    """Deleta uma mensagem de um chat.
-
-    Args:
-        context: Contexto do bot Telegram.
-        chat_id: ID do chat destino.
-        message_id: ID da mensagem a ser deletada.
-    """
+async def deletar_mensagem(context: CallbackContext, chat_id, message_id) -> bool:
+    """Remove uma mensagem e informa se a API confirmou a operação."""
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        return True
+    except TelegramError:
+        logger.warning("Telegram recusou exclusão no chat %s.", chat_id, exc_info=True)
     except Exception:
-        logger.exception("Falha ao excluir mensagem %s do chat %s", message_id, chat_id)
+        logger.exception("Falha inesperada ao excluir mensagem no chat %s.", chat_id)
+    return False
 
 
-async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, buttons):
-    """Envia uma mensagem com teclado interativo.
-
-    Args:
-        context: Contexto do bot Telegram.
-        chat_id: ID do chat destino.
-        texto: Texto da mensagem.
-        buttons: Lista de botões para o teclado.
-    """
+async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, buttons) -> bool:
+    """Envia uma mensagem com teclado de resposta."""
     try:
         await context.bot.send_message(
             chat_id=chat_id,
@@ -68,26 +58,30 @@ async def mandar_mensagem_teclado(context: CallbackContext, chat_id, texto, butt
             text=texto,
             reply_markup=ReplyKeyboardMarkup(buttons),
         )
+        return True
+    except TelegramError:
+        logger.warning("Telegram recusou teclado para o chat %s.", chat_id, exc_info=True)
     except Exception:
-        logger.exception("Falha ao enviar teclado para %s", chat_id)
+        logger.exception("Falha inesperada ao enviar teclado para o chat %s.", chat_id)
+    return False
 
 
-async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_message_id=None):
-    """Envia uma imagem para um chat.
-
-    Args:
-        context: Contexto do bot Telegram.
-        chat_id: ID do chat destino.
-        imagem: Nome do arquivo da imagem (sem extensão).
-        reply_to_message_id: ID da mensagem para responder (opcional).
-    """
+async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_message_id=None) -> bool:
+    """Envia um JPEG do diretório de trabalho sem propagar falhas recuperáveis."""
+    caminho = pathlib.Path(pathlib.Path().resolve()) / f"{imagem}.jpg"
     try:
-        with open(f"{pathlib.Path().resolve()}/{imagem}.jpg", "rb") as f:
+        with caminho.open("rb") as arquivo:
             await context.bot.send_photo(
                 chat_id=chat_id,
                 parse_mode="Markdown",
-                photo=f,
+                photo=arquivo,
                 reply_to_message_id=reply_to_message_id,
             )
+        return True
+    except OSError:
+        logger.warning("Imagem %s indisponível para o chat %s.", caminho.name, chat_id, exc_info=True)
+    except TelegramError:
+        logger.warning("Telegram recusou imagem para o chat %s.", chat_id, exc_info=True)
     except Exception:
-        logger.exception("Falha ao enviar imagem %s para %s", imagem, chat_id)
+        logger.exception("Falha inesperada ao enviar imagem para o chat %s.", chat_id)
+    return False

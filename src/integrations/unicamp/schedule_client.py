@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 @retry(max_attempts=3, delay=1.0, exceptions=(requests.RequestException,))
 def _get_horario(url: str):
-    return requests.get(url, timeout=10)
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    return response
 
 
 def horario_funcionamento() -> Optional[str]:
@@ -51,6 +53,6 @@ def horario_funcionamento() -> Optional[str]:
         if horarios is not None:
             return horarios
 
-    except requests.RequestException as e:
-        logger.warning("Falha ao consultar horários: %s", e)
+    except (requests.RequestException, AttributeError, TypeError, ValueError) as e:
+        logger.warning("Falha ao consultar horários: %s", type(e).__name__)
         return None

@@ -109,3 +109,77 @@ class TestLogClass:
         await log.enviar_log(mock_context)
 
         assert log._log == ""
+
+
+class TestLogRobusto:
+    def test_sanitiza_segredos_e_atribuicoes(self):
+        from interfaces.telegram.logging import sanitizar_texto
+
+        texto = sanitizar_texto("token=test_meta_page_token password=abacaxi")
+        assert "test_meta_page_token" not in texto
+        assert "abacaxi" not in texto
+        assert texto.count("[REDACTED]") == 2
+
+    def test_fragmentos_respeitam_limite(self):
+        from interfaces.telegram.logging import dividir_mensagem
+
+        partes = dividir_mensagem("linha longa " * 1000)
+        assert len(partes) > 1
+        assert all(len(parte) <= 4000 for parte in partes)
+        assert partes[0].startswith("[parte 1/")
+
+    @pytest.mark.asyncio
+    async def test_falha_parcial_mantem_apenas_bloco_pendente(self, mock_context):
+        class Sink:
+            def __init__(self):
+                self.resultados = iter([True, False, True])
+
+            async def send(self, *_args):
+                return next(self.resultados)
+
+        log = Log(sink=Sink())
+        log.info("x" * 5000)
+        assert await log.enviar_log(mock_context) is False
+        assert len(log._pending_chunks) == 1
+        assert await log.enviar_log(mock_context) is True
+        assert log._log == ""
+
+    def test_limite_descarta_primeiro_entrada_de_baixa_severidade(self, monkeypatch):
+        import interfaces.telegram.logging as modulo
+
+        monkeypatch.setattr(modulo, "MAX_BUFFER_ENTRIES", 2)
+        log = Log(nivel=LogLevel.DEBUG)
+        log.info("ruído")
+        log.error("erro")
+        log.critical("crítico")
+        assert "ruído" not in log._log
+        assert "erro" in log._log
+        assert "crítico" in log._log
+
+    @pytest.mark.asyncio
+    async def test_retry_transitorio_nao_perde_log(self, mock_context, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        from telegram.error import TimedOut
+
+        import interfaces.telegram.logging as modulo
+
+        mock_context.bot.send_message.side_effect = [TimedOut(), None]
+        monkeypatch.setattr(modulo.asyncio, "sleep", AsyncMock())
+        log = Log()
+        log.error("falha transitória")
+        assert await log.enviar_log(mock_context) is True
+        assert mock_context.bot.send_message.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_error_handler_envia_apenas_resumo(self, mock_context):
+        from types import SimpleNamespace
+
+        from interfaces.telegram.logging import tratar_erro_aplicacao
+
+        mock_context.error = ValueError("password=segredo-interno")
+        await tratar_erro_aplicacao(SimpleNamespace(update_id=42), mock_context)
+        enviado = mock_context.bot.send_message.call_args.kwargs["text"]
+        assert "ValueError" in enviado
+        assert "segredo-interno" not in enviado
+        assert "Traceback" not in enviado

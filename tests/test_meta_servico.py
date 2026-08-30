@@ -231,3 +231,18 @@ class TestOrquestracao:
         log = MagicMock()
         await meta.postar_meta(mock_context, "Menu", "Arroz", log)
         assert chamadas == [(meta._postar_meta_sync, ("Menu", "Arroz", log))]
+
+
+def test_cliente_fecha_sessao_criada_internamente(monkeypatch):
+    session = MagicMock()
+    monkeypatch.setattr(meta.requests, "Session", lambda: session)
+    client = MetaClient(
+        access_token="segredo-meta",
+        instagram_user_id="ig-1",
+        facebook_page_id="page-1",
+        api_version="v26.0",
+    )
+
+    client.close()
+
+    session.close.assert_called_once()

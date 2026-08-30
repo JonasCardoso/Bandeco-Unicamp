@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     r2_bucket: Optional[str] = None
     hf_token: Optional[str] = Field(default=None, repr=False)
 
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    telegram_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    healthcheck_file: Path = Path("/tmp/bandeco-heartbeat")
+    hf_home: Optional[Path] = None
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
         env_file_encoding="utf-8",
@@ -81,3 +86,18 @@ def validar_variaveis_obrigatorias(settings: Optional[Settings] = None) -> list[
     """Retorna os nomes das configurações essenciais ausentes ou vazias."""
     config = settings or Settings()
     return [nome for nome in REQUIRED_ENV_VARS if not getattr(config, nome.lower())]
+
+
+def valores_sensiveis(settings: Optional[Settings] = None) -> tuple[str, ...]:
+    """Retorna segredos configurados para sanitização, sem os registrar."""
+    config = settings or get_settings()
+    campos = (
+        "token_bot_telegram",
+        "firebase_json",
+        "tweetkit_cookie",
+        "meta_page_access_token",
+        "r2_access_key_id",
+        "r2_secret_access_key",
+        "hf_token",
+    )
+    return tuple(valor for campo in campos if (valor := getattr(config, campo, None)))

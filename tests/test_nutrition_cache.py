@@ -75,3 +75,16 @@ def test_cache_respeita_limite_de_entradas(tmp_path, monkeypatch):
         pipeline._salvar_cache_tabela([[indice]], f"hash-{indice}")
     dados = json.loads((tmp_path / "cache.json").read_text(encoding="utf-8"))
     assert len(dados["entradas"]) == 3
+
+
+def test_cache_legado_e_migrado_para_diretorio_persistente(tmp_path, monkeypatch):
+    legado = tmp_path / "cache-legado.json"
+    destino = tmp_path / "cache" / "cache_tabela_nutricional.json"
+    dados = {"pipeline": pipeline.PIPELINE_SCHEMA_VERSION, "entradas": {}}
+    legado.write_text(json.dumps(dados), encoding="utf-8")
+    monkeypatch.setattr(pipeline, "LEGACY_CACHE_TABELA_ARQUIVO", legado)
+    monkeypatch.setattr(pipeline, "DEFAULT_CACHE_TABELA_ARQUIVO", destino)
+    monkeypatch.setattr(pipeline, "CACHE_TABELA_ARQUIVO", destino)
+
+    assert pipeline._ler_cache() == dados
+    assert json.loads(destino.read_text(encoding="utf-8")) == dados

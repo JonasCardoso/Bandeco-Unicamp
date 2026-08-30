@@ -1,5 +1,7 @@
 """Comandos de consulta de cardápio, horários e preços."""
 
+import asyncio
+
 from telegram import Update
 from telegram.ext import CallbackContext
 
@@ -31,7 +33,7 @@ async def jantar(update: Update, context: CallbackContext):
 
 async def preco(update: Update, context: CallbackContext):
     """Retorna a tabela de valores das refeições da Prefeitura Universitária."""
-    resultado = obter_valores_refeicao()
+    resultado = await asyncio.to_thread(obter_valores_refeicao)
     if resultado is None:
         await mandar_mensagem(
             context, update.effective_chat.id, "Não foi possível consultar os valores. Tente novamente mais tarde."
@@ -43,11 +45,13 @@ async def preco(update: Update, context: CallbackContext):
 
 async def horario(update: Update, context: CallbackContext):
     log = Log()
-    horarios = horario_funcionamento()
+    horarios = await asyncio.to_thread(horario_funcionamento)
     if horarios is None:
-        log.adicionar_log(
-            f"horario - {update.effective_chat.id} - {update.effective_chat.full_name} - "
-            f"{update.effective_chat.username} - Não foi possível pegar o horario"
+        log.error(
+            "Não foi possível consultar o horário",
+            component="telegram.menu",
+            event="schedule_fetch_failed",
+            context={"chat_id": update.effective_chat.id, "username": update.effective_chat.username},
         )
         await log.enviar_log(context)
         return

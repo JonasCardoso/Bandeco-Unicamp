@@ -19,3 +19,12 @@ src/.pytest_cache/
 src/.ruff_cache/
 src/cache_tabela_nutricional.json
 src/tabela_temporaria.*
+
+# Reforço para artefatos regeneráveis e dados de sessão.
+.cache_bandeco_nutricao/catalogo/
+.cache_bandeco_nutricao/tabelas/
+.cache_bandeco_nutricao/cache_tabela_nutricional.json
+*.har
+*.session
+*.session-journal
+cookies*.json

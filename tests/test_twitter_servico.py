@@ -88,6 +88,9 @@ class TestPostarTweet:
             # Verifica que o log foi registrado
             assert mock_log.adicionar_log.called
             assert mock_log.enviar_log.called
+            from integrations.social import twitter
+
+            assert twitter._client is None
 
     @pytest.mark.asyncio
     async def test_resposta_de_falha_e_enviada_ao_log(self, mock_context):

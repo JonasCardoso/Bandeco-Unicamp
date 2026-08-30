@@ -79,3 +79,6 @@ def hospedar_imagens(caminhos: Sequence[Path]) -> Iterator[list[str]]:
                     cliente.delete_object(Bucket=bucket, Key=chave)
                 except (BotoCoreError, ClientError):
                     logger.warning("Falha ao remover objeto temporário do Cloudflare R2: %s", chave)
+        if cliente is not None:
+            if callable(close := getattr(cliente, "close", None)):
+                close()

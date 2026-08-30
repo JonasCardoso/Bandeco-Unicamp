@@ -18,12 +18,16 @@ logger = logging.getLogger(__name__)
 
 @retry(max_attempts=3, delay=1.0, exceptions=(req.RequestException,))
 def _get_prefeitura(url: str):
-    return req.get(url, timeout=5)
+    response = req.get(url, timeout=5)
+    response.raise_for_status()
+    return response
 
 
 @retry(max_attempts=3, delay=1.0, exceptions=(req.RequestException,))
 def _post_json(url: str):
-    return req.post(url, timeout=5)
+    response = req.post(url, timeout=5)
+    response.raise_for_status()
+    return response
 
 
 def comida(data: str) -> Optional[List[str]]:
@@ -113,8 +117,8 @@ def comida_site_prefeitura(data: str) -> Optional[List[str]]:
 
         return cardapios
 
-    except req.RequestException as e:
-        logger.warning("Erro ao consultar cardápio da prefeitura (%s): %s", data, e)
+    except (req.RequestException, AttributeError, IndexError, TypeError, ValueError) as e:
+        logger.warning("Erro ao consultar cardápio da prefeitura (%s): %s", data, type(e).__name__)
         return None
 
 
@@ -166,6 +170,6 @@ def comida_site_json(data: str) -> Optional[List[str]]:
 
         return cardapios
 
-    except req.RequestException as e:
-        logger.warning("Erro ao consultar cardápio JSON (%s): %s", data, e)
+    except (req.RequestException, KeyError, TypeError, ValueError) as e:
+        logger.warning("Erro ao consultar cardápio JSON (%s): %s", data, type(e).__name__)
         return None

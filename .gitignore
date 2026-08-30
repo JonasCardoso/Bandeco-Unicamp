@@ -36,6 +36,8 @@ cache_tabela_nutricional.json
 .cache_bandeco_nutricao/**/*_embeddings_*.pt
 .cache_bandeco_nutricao/**/*.tmp
 .cache_bandeco_nutricao/catalogo/
+.cache_bandeco_nutricao/tabelas/
+.cache_bandeco_nutricao/cache_tabela_nutricional.json
 .cache_bandeco_nutricao/tbca/html_*.html
 .cache_bandeco_nutricao/tbca/alimentos_meta.json
 
@@ -69,3 +71,7 @@ nul
 *.rej
 *.bak
 *.log
+*.har
+*.session
+*.session-journal
+/cookies*.json

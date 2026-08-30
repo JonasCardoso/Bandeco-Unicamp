@@ -4,6 +4,7 @@ Este módulo orquestra a consulta de cardápios, formatação e envio
 de notificações para Telegram, Twitter/X e Meta (Instagram/Facebook).
 """
 
+import asyncio
 import datetime as dt
 
 from telegram.ext import CallbackContext
@@ -34,10 +35,10 @@ async def notificar_cardapio(context: CallbackContext) -> None:
     """
     log = Log()
     hoje = dt.datetime.today()
-    cardapio_dia = comida(hoje.strftime("%Y-%m-%d"))
+    cardapio_dia = await asyncio.to_thread(comida, hoje.strftime("%Y-%m-%d"))
 
     if cardapio_dia is None:
-        log.adicionar_log(f"notificarCardapio - {0} - Não foi possível consultar o cardápio")
+        log.error("Não foi possível consultar o cardápio", component="notifications", event="menu_fetch_failed")
         await log.enviar_log(context)
         return
 
@@ -63,9 +64,9 @@ async def notificar_cardapio(context: CallbackContext) -> None:
 
     await log.enviar_log(context)
 
-    usuarios = get_firebase().pegar_todos_usuarios()
+    usuarios = await asyncio.to_thread(get_firebase().pegar_todos_usuarios)
     if not usuarios:
-        log.adicionar_log(f"notificarCardapio - {0} - Não foi possível pegar todos usuários")
+        log.error("Não foi possível obter os usuários", component="notifications", event="users_fetch_failed")
         await log.enviar_log(context)
         return
 

@@ -27,7 +27,9 @@ from .parser import extrair_itens
 from .rendering import gerar_imagem_tabela as renderizar_tabela
 from .sources import _float
 
-CACHE_TABELA_ARQUIVO = "cache_tabela_nutricional.json"
+DEFAULT_CACHE_TABELA_ARQUIVO = CACHE_DIR / "cache_tabela_nutricional.json"
+LEGACY_CACHE_TABELA_ARQUIVO = Path("cache_tabela_nutricional.json")
+CACHE_TABELA_ARQUIVO = DEFAULT_CACHE_TABELA_ARQUIVO
 CACHE_TABELA_TTL_HOURS = 24
 CACHE_TABELA_MAX_ENTRADAS = 64
 logger = logging.getLogger(__name__)
@@ -51,15 +53,28 @@ def _caminho_imagem(chave_cardapio: str) -> Path:
 
 
 def _ler_cache() -> dict:
+    destino = Path(CACHE_TABELA_ARQUIVO)
+    origem = destino
+    migrar_legado = (
+        destino == DEFAULT_CACHE_TABELA_ARQUIVO and not destino.exists() and LEGACY_CACHE_TABELA_ARQUIVO.exists()
+    )
+    if migrar_legado:
+        origem = LEGACY_CACHE_TABELA_ARQUIVO
     try:
-        dados = json.loads(Path(CACHE_TABELA_ARQUIVO).read_text(encoding="utf-8"))
+        dados = json.loads(origem.read_text(encoding="utf-8"))
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return {"pipeline": PIPELINE_SCHEMA_VERSION, "entradas": {}}
-    if "entradas" in dados:
-        return dados
-    chave = dados.get("cardapio_hash")
-    entrada = {"timestamp": dados.get("timestamp"), "dados": dados.get("dados")}
-    return {"pipeline": dados.get("pipeline"), "entradas": {chave: entrada} if chave else {}}
+    if "entradas" not in dados:
+        chave = dados.get("cardapio_hash")
+        entrada = {"timestamp": dados.get("timestamp"), "dados": dados.get("dados")}
+        dados = {"pipeline": dados.get("pipeline"), "entradas": {chave: entrada} if chave else {}}
+    if migrar_legado:
+        try:
+            _escrever_cache(dados)
+            logger.info("Cache nutricional legado migrado para %s.", destino)
+        except OSError:
+            logger.warning("Não foi possível migrar o cache nutricional legado.", exc_info=True)
+    return dados
 
 
 def _entrada_valida(entrada: dict, agora: datetime) -> bool:

@@ -4,9 +4,10 @@ Este módulo fornece funções para consultar o saldo do cartão universitário
 dos alunos através da API do Bandeco.
 """
 
+import asyncio
 from typing import Optional
 
-import requests as requests
+import requests as requests  # noqa: F401 - ponto de patch compatível para testes/consumidores
 from telegram import Update
 from telegram.ext import CallbackContext
 
@@ -40,7 +41,7 @@ async def saldo_bandeco(update: Update, context: CallbackContext, ra_numero: str
             "rapassword3": hash_SHA512,
         }
 
-        response = _post_saldo(url, data)
+        response = await asyncio.to_thread(_post_saldo, url, data)
 
         if response.json().get("erro") is not None:
             return "Usuário e/ou Senha Inválido(s)"
@@ -49,9 +50,11 @@ async def saldo_bandeco(update: Update, context: CallbackContext, ra_numero: str
             return f"O saldo do RA {ra_numero} é de R$ {valor}"
 
     except Exception as error:
-        log.adicionar_log(
-            f"saldoBandeco - {update.effective_chat.id} - {update.effective_chat.full_name} - "
-            f"{update.effective_chat.username} - Não foi possível consultar o saldo do RA\n{error}"
+        log.error(
+            f"Não foi possível consultar o saldo: {type(error).__name__}",
+            component="balance",
+            event="query_failed",
+            context={"chat_id": update.effective_chat.id, "username": update.effective_chat.username},
         )
         await log.enviar_log(context)
         return None

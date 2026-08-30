@@ -168,3 +168,24 @@ class TestSettingsModelConfig:
 
         raiz = Path(__file__).resolve().parents[1]
         assert Path(Settings.model_config["env_file"]) == raiz / ".env"
+
+
+def test_settings_niveis_de_log_e_healthcheck(monkeypatch):
+    from core.settings import Settings
+
+    monkeypatch.setenv("LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("TELEGRAM_LOG_LEVEL", "ERROR")
+    monkeypatch.setenv("HEALTHCHECK_FILE", "/tmp/health-custom")
+    settings = Settings()
+
+    assert settings.log_level == "WARNING"
+    assert settings.telegram_log_level == "ERROR"
+    assert settings.healthcheck_file == Path("/tmp/health-custom")
+
+
+def test_settings_rejeita_nivel_de_log_invalido(monkeypatch):
+    from core.settings import Settings
+
+    monkeypatch.setenv("LOG_LEVEL", "VERBOSE")
+    with pytest.raises(ValidationError):
+        Settings()

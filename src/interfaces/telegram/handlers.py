@@ -1,5 +1,7 @@
 """Handler Telegram para geração da tabela nutricional."""
 
+import asyncio
+
 from telegram import Update
 from telegram.ext import CallbackContext
 
@@ -14,7 +16,7 @@ async def tabela(update: Update, context: CallbackContext):
     if resposta is not None and get_bot_username() == getattr(remetente, "username", None):
         message = resposta.text
         if message is not None and any(word in message for word in ["Almoço", "Jantar", "Café da manhã"]):
-            imagem = gerar_tabela_nutricional(resposta.text)
+            imagem = await asyncio.to_thread(gerar_tabela_nutricional, resposta.text)
             if imagem is not None:
                 await mandar_imagem(context, update.effective_chat.id, imagem, resposta.message_id)
                 return

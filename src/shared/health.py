@@ -1,10 +1,11 @@
 """Heartbeat interno usado pelo healthcheck do container."""
 
-import os
 import time
 from pathlib import Path
 
-HEALTHCHECK_FILE = Path(os.getenv("HEALTHCHECK_FILE", "/tmp/bandeco-heartbeat"))
+from core.settings import get_settings
+
+HEALTHCHECK_FILE = Path(get_settings().healthcheck_file)
 HEALTHCHECK_MAX_AGE_SECONDS = 90
 
 

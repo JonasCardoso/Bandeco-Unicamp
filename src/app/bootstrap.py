@@ -16,6 +16,7 @@ from core.config import (
     log_env_validation,
     validar_env_vars,
 )
+from core.settings import get_settings
 from integrations.firebase.user_repository import get_firebase
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,8 @@ def configurar_runtime() -> None:
     os.environ.setdefault("TZ", "America/Sao_Paulo")
     if hasattr(time, "tzset"):
         time.tzset()
-    logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+    nivel = getattr(logging, get_settings().log_level.upper(), logging.INFO)
+    logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=nivel)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 

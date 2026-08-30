@@ -1,84 +1,169 @@
 # Bandeco Unicamp Bot
 
-Bot do Telegram para cardápios dos restaurantes universitários da Unicamp, horários, saldo, câmeras e projeção nutricional.
+## Descrição
+
+Bot do Telegram que reúne cardápios dos restaurantes universitários da Unicamp, horários, preços, saldo do cartão, câmeras e estimativas nutricionais. Também publica cardápios no Facebook, Instagram e X/Twitter quando essas integrações estão configuradas.
+
+## Funcionalidades
+
+- Consulta de café da manhã, almoço e jantar, com modalidades tradicional e vegana.
+- Preferências e notificações diárias por usuário.
+- Consulta de horários, preços, saldo e câmeras dos restaurantes.
+- Imagem de tabela nutricional estimada com referências TACO/TBCA.
+- Publicação programada no Telegram, Facebook, Instagram e X/Twitter.
+- Healthcheck, cache persistente e canal de diagnóstico com logs sanitizados.
+
+As estimativas nutricionais não substituem orientação profissional.
+
+## Arquitetura
+
+O entrypoint é `python -m app`. O bootstrap valida configuração, inicializa Firebase, constrói o bot, registra handlers/jobs e inicia o polling. Operações HTTP, SDKs e modelos síncronos são deslocados para threads nas fronteiras assíncronas.
+
+- `app/`: bootstrap, scheduler e registro dos handlers.
+- `core/`: configuração tipada e constantes.
+- `interfaces/telegram/`: comandos, mensagens, teclados e logging.
+- `modules/`: regras de negócio de cardápio, saldo, câmeras, notificações e nutrição.
+- `integrations/`: Unicamp, Firebase, Meta, R2 e X/Twitter.
+- `presentation/`: imagens e recursos gráficos.
+- `shared/`: retry, rate limit e healthcheck.
+- `tests/`: testes unitários e de integração com mocks.
+
+Detalhes: [arquitetura](docs/architecture.md).
 
 ## Requisitos
 
-- Python 3.12
-- Docker com Compose v2 para execução em container
-- Credenciais do Telegram e Firebase
+- Python 3.12.
+- Docker com Compose v2, caso a execução seja em container.
+- Credenciais Telegram e Firebase.
+- Memória e disco suficientes para PyTorch e modelos nutricionais quando `/tabela` for utilizado.
 
-Copie `.env.example` para `.env`, na raiz do repositório, e preencha as variáveis obrigatórias. `FIREBASE_JSON` aceita o JSON da conta de serviço ou o caminho para um arquivo de credenciais montado. `HF_TOKEN` é opcional e nunca é registrado; quando presente, o Hugging Face Hub o utiliza automaticamente.
-
-## Desenvolvimento local
+## Instalação
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
-python -m pytest --cov=src --cov-fail-under=65
-ruff check src tests
-ruff format --check src tests
+cp .env.example .env
+```
+
+No PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+$env:PYTHONPATH = "src"
+```
+
+## Configuração
+
+A aplicação lê `.env` na raiz. Nunca versione esse arquivo. `FIREBASE_JSON` aceita o JSON da conta de serviço ou um caminho para o arquivo montado.
+
+## Variáveis de ambiente
+
+| Grupo | Variáveis | Obrigatoriedade |
+|---|---|---|
+| Telegram | `TOKEN_BOT_TELEGRAM`, `USERNAME_BOT_TELEGRAM`, `ID_LOG_CHANNEL` | Obrigatórias |
+| Firebase | `DATABASE_URL_FIREBASE`, `FIREBASE_JSON` | URL obrigatória; credencial necessária no startup |
+| Agenda | `HORARIO_CAFE`, `HORARIO_ALMOCO`, `HORARIO_JANTAR` | Defaults no exemplo |
+| Unicamp | `URL_BANDECO_PREFEITURA`, `URL_BANDECO_JSON`, `URL_HORARIO`, `URL_SALDO`, URLs de preços e câmeras | Defaults públicos |
+| Meta | `META_PAGE_ACCESS_TOKEN`, `META_GRAPH_API_VERSION`, `FACEBOOK_PAGE_ID`, `INSTAGRAM_USER_ID` | Necessárias somente para publicação Meta |
+| R2 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Necessárias para mídia do Instagram |
+| X/Twitter | `TWEETKIT_COOKIE` | Necessária somente para publicação no X |
+| Modelos | `HF_TOKEN`, `HF_HOME` | Opcionais |
+| Operação | `LOG_LEVEL`, `TELEGRAM_LOG_LEVEL`, `HEALTHCHECK_FILE` | Opcionais, com defaults |
+
+Use somente `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL` nos níveis de log.
+
+## Execução local
+
+Na raiz do projeto:
+
+```bash
 PYTHONPATH=src python -m app
 ```
 
-No PowerShell, defina o caminho de imports antes de iniciar:
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m app
-```
-
-Execute os comandos a partir da raiz do repositório. `src` é o diretório-raiz do código e não é um pacote Python; `app` é o entrypoint. A inicialização acontece explicitamente na ordem: configuração, Firebase, Telegram e polling. O pipeline nutricional é lazy: modelos são carregados somente quando a tabela é solicitada e podem ser liberados após o período de ociosidade.
-
-## Facebook e Instagram
-
-A publicação usa exclusivamente a Meta Graph API `v26.0` com Facebook Login e um Page Access Token. Configure `META_PAGE_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID`, `INSTAGRAM_USER_ID`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` e `R2_BUCKET`. O token deve ter as permissões `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic` e `instagram_content_publish`; a conta profissional do Instagram precisa estar vinculada à Página.
-
-As imagens do Facebook são enviadas diretamente por multipart. Para o Instagram, o bot envia JPEGs temporários a um bucket privado do Cloudflare R2, gera URLs S3v4 válidas por 15 minutos e remove os objetos ao terminar, inclusive em caso de falha. O token R2 precisa das permissões de leitura e escrita de objetos no bucket escolhido. `R2_PUBLIC_URL` não é necessária e o acesso público ao bucket pode permanecer desativado. URLs assinadas, tokens e credenciais não são registrados.
-
-Consulte a [coleção oficial da Instagram API](https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api) e a [documentação oficial do R2 com boto3 e URLs pré-assinadas](https://developers.cloudflare.com/r2/examples/aws/boto3/).
+O pipeline nutricional é lazy: modelos são carregados na primeira solicitação e liberados após o período de inatividade. A primeira execução pode baixar modelos.
 
 ## Docker
 
 ```bash
 cp .env.example .env
-docker compose config
+docker compose config --quiet
 docker build --check .
-docker compose build
+docker build -t bandeco-unicamp:local .
 docker compose up -d
 ```
 
-A imagem usa Python 3.12, roda como usuário não-root (UID/GID 10001) e inicia com `python -m app`. A distribuição CPU do PyTorch é instalada pelo índice oficial.
+A imagem roda como usuário não-root, inicia com `python -m app` e usa `/bandeco/.cache_bandeco_nutricao` como volume persistente. O healthcheck lê o heartbeat gravado pelo scheduler.
 
-O volume `runtime-cache` mantém TACO, TBCA, índices, imagens e modelos do Hugging Face em `/bandeco/.cache_bandeco_nutricao`; `HF_HOME` aponta para o subdiretório gravável `huggingface`.
-
-O primeiro deploy com esta versão baixa novamente os modelos no volume novo. Os volumes antigos `nutrition-cache` e `model-cache` não são removidos automaticamente. Somente depois de validar o deploy e a reutilização do cache, eles podem ser listados e removidos manualmente com `docker volume ls` e `docker volume rm <nome-exato>`.
-
-Para desenvolvimento com a imagem `develop`:
+Para a imagem de desenvolvimento:
 
 ```bash
-docker compose -f docker-compose.develop.yaml config
+docker compose -f docker-compose.develop.yaml config --quiet
 docker compose -f docker-compose.develop.yaml up -d
 ```
 
-## Estrutura
+## Testes
 
-O código está organizado diretamente sob `src/`:
+```bash
+python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=65
+ruff check src tests tools
+ruff format --check src tests tools
+python tools/check_import_cycles.py
+```
 
-- `app/`: entrypoint, bootstrap, agendamento e registro de handlers.
-- `core/`: settings, constantes e acesso tipado à configuração.
-- `shared/`: retry, rate limiting e operações genéricas de arquivo.
-- `modules/`: regras de cardápio, saldo, câmeras, notificações, preferências e nutrição.
-- `integrations/`: clientes Unicamp, Firebase, Cloudflare R2, Meta e Twitter.
-- `interfaces/telegram/`: handlers, comandos, teclados, mensagens e logging.
-- `presentation/`: geração de imagens e assets gráficos.
+Os testes unitários usam mocks e não chamam Telegram, Firebase, Meta, R2, X ou Unicamp reais.
 
-Os imports internos usam esses pacotes diretamente, por exemplo `from core.config import get_bot_username`. Não existem módulos planos ou fachadas legadas na raiz de `src`.
+## Integrações externas
 
-As tabelas nutricionais são estimativas baseadas em TACO/TBCA e modelos de similaridade; não substituem orientação profissional.
+### Telegram
+
+Recebe comandos, envia notificações e hospeda o canal de diagnóstico. Logs grandes são fragmentados; falhas transitórias têm retries limitados e blocos não confirmados permanecem pendentes.
+
+### Facebook e Instagram
+
+Usam Meta Graph API `v26.0`. O Facebook recebe JPEGs por multipart. O Instagram consome URLs assinadas e temporárias do R2; os objetos são removidos após a tentativa de publicação.
+
+### X/Twitter
+
+Usa `tweetkit-x` com cookie de sessão. O cliente é criado sob demanda e invalidado após falha, evitando reutilização de sessão expirada.
+
+### Cloudflare R2
+
+O bucket pode permanecer privado. As URLs são S3v4 com duração de 15 minutos, e os objetos ficam sob prefixos únicos organizados por data.
+
+Veja [integrações](docs/integrations.md).
+
+## Deploy
+
+O CI testa, verifica estilo e ciclos, valida dependências nutricionais, constrói a imagem e publica no GHCR. Pushes em `develop` e `main` acionam os ambientes correspondentes via Komodo. Consulte [operações e deploy](docs/operations.md).
+
+## Troubleshooting
+
+- Startup encerra com código 1: confira as variáveis obrigatórias e o formato de `FIREBASE_JSON`.
+- Canal de logs não recebe mensagens: confirme `ID_LOG_CHANNEL`, permissões do bot e `TELEGRAM_LOG_LEVEL`.
+- `/tabela` demora na primeira chamada: aguarde o download e carregamento dos modelos.
+- Cache não gravável: confira proprietário e permissões do volume.
+- Healthcheck falha: confira o scheduler e `HEALTHCHECK_FILE`.
+- Publicação social falha: valide credenciais e consulte os logs locais, que preservam traceback sem enviá-lo ao Telegram.
+
+Mais casos em [operações](docs/operations.md).
+
+## Segurança
+
+- Nunca versione `.env`, cookies, contas de serviço, HARs ou arquivos de sessão.
+- Rotacione qualquer credencial que tenha sido exposta fora do gerenciador de secrets.
+- O canal Telegram recebe contexto sanitizado, não tracebacks, tokens, cookies ou senhas.
+- Restrinja o token R2 ao bucket necessário e o token Meta às permissões de publicação.
+- O container executa como usuário sem privilégios.
+
+## Desenvolvimento
+
+Mantenha regras de negócio em `modules/`, SDKs e HTTP em `integrations/` e detalhes Telegram em `interfaces/`. Preserve as fachadas existentes ao refatorar e adicione testes para fallbacks, erros e concorrência.
 
 ## Licença
 
-[AGPL-3.0](./LICENSE)
+Distribuído sob [GNU Affero General Public License v3.0](LICENSE).
