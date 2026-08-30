@@ -264,6 +264,7 @@ class PipelineNutricional:
     catalogo_referencias: dict
 
     _modelos_lock: threading.RLock = field(default_factory=threading.RLock, init=False, repr=False)
+    _catalogo_lock: threading.RLock = field(default_factory=threading.RLock, init=False, repr=False)
     _timer_descarga: Optional[threading.Timer] = field(default=None, init=False, repr=False)
     _usos_modelos: int = field(default=0, init=False, repr=False)
 
@@ -293,7 +294,8 @@ class PipelineNutricional:
             return
 
         inicio = time.perf_counter()
-        logger.info("Carregando embedding e reranker na memória...")
+        ram_antes = _obter_rss_mb()
+        logger.info("Carregando embedding e reranker na memória (RSS inicial: %s MB)...", ram_antes)
         try:
             import torch
             from sentence_transformers import CrossEncoder, SentenceTransformer, util
@@ -321,10 +323,13 @@ class PipelineNutricional:
             self.embeddings_taco = None
             self.embeddings_tbca = None
             raise
+        ram_depois = _obter_rss_mb()
         logger.info(
-            "Embedding e reranker carregados em %.2fs (dispositivo: %s).",
+            "Embedding e reranker carregados em %.2fs (dispositivo: %s; RSS: %s -> %s MB).",
             time.perf_counter() - inicio,
             self.device,
+            ram_antes,
+            ram_depois,
         )
 
     def _descarregar_modelos_se_ocioso(self) -> None:
@@ -477,8 +482,11 @@ class PipelineNutricional:
         )
 
     def _memorizar(self, chave, resultado):
-        self.catalogo_referencias[chave] = resultado
-        _salvar_json(CATALOGO_REFERENCIAS_PATH, self.catalogo_referencias)
+        with self._catalogo_lock:
+            if self.catalogo_referencias.get(chave) == resultado:
+                return resultado
+            self.catalogo_referencias[chave] = resultado
+            _salvar_json(CATALOGO_REFERENCIAS_PATH, self.catalogo_referencias)
         return resultado
 
     def buscar_referencia(self, q, ctx=None):

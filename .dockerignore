@@ -1,7 +1,7 @@
 # Contexto em allowlist: somente arquivos copiados pelo Dockerfile.
 **
 !Dockerfile
-!requirements.txt
+!requirements*.txt
 !src/
 !src/**
 !.cache_bandeco_nutricao/

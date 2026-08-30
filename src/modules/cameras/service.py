@@ -6,17 +6,18 @@ from datetime import timedelta
 from pathlib import Path
 from typing import List, Optional
 
-import cv2
-
 from core.config import get_cam_ra, get_cam_rs, get_cam_ru_a, get_cam_ru_b
 from integrations.unicamp.camera_client import fetch_camera
 
 logger = logging.getLogger(__name__)
 
 
-def salvar_imagem(imagens: list, cameras: List[str]) -> None:
+def salvar_imagem(imagens: list[bytes], cameras: List[str]) -> None:
     for imagem, camera in zip(imagens, cameras, strict=True):
-        cv2.imwrite(str(Path.cwd() / f"{camera}.jpg"), imagem)
+        destino = Path.cwd() / f"{camera}.jpg"
+        temporario = destino.with_suffix(".jpg.tmp")
+        temporario.write_bytes(imagem)
+        temporario.replace(destino)
 
 
 def verificar_atualizacao(atualizacao, agora=None) -> bool:

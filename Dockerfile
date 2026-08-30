@@ -7,11 +7,12 @@ ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 RUN python -m venv "${VIRTUAL_ENV}"
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements*.txt /tmp/
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip \
-    && python -m pip install --no-compile --index-url "${TORCH_INDEX_URL}" "torch~=2.13.0" \
-    && python -m pip install --no-compile -r /tmp/requirements.txt
+    && python -m pip install --no-compile --index-url "${TORCH_INDEX_URL}" -r /tmp/requirements-torch.txt \
+    && python -m pip install --no-compile -r /tmp/requirements.txt \
+    && python -m pip install --no-compile -r /tmp/requirements-ml.txt
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
 ENV PATH="/opt/venv/bin:${PATH}" \
@@ -26,10 +27,7 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     MKL_NUM_THREADS=4 \
     MALLOC_ARENA_MAX=2
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 10001 bandeco \
+RUN groupadd --gid 10001 bandeco \
     && useradd --uid 10001 --gid bandeco --create-home --shell /usr/sbin/nologin bandeco \
     && install -d -o bandeco -g bandeco \
        /bandeco /bandeco/.cache_bandeco_nutricao \

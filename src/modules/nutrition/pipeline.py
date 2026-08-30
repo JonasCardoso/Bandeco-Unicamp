@@ -8,6 +8,8 @@ import io
 import json
 import logging
 import re
+import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -27,7 +29,9 @@ from .sources import _float
 
 CACHE_TABELA_ARQUIVO = "cache_tabela_nutricional.json"
 CACHE_TABELA_TTL_HOURS = 24
+CACHE_TABELA_MAX_ENTRADAS = 64
 logger = logging.getLogger(__name__)
+_CACHE_LOCK = threading.RLock()
 
 from .matching import (
     PIPELINE_SCHEMA_VERSION,
@@ -38,40 +42,99 @@ def _hash_cardapio(c):
     return hashlib.sha256(f"{PIPELINE_SCHEMA_VERSION}\n{c.strip()}".encode()).hexdigest()
 
 
-def _carregar_cache_tabela(chave_cardapio=None):
+def _agora() -> datetime:
+    return datetime.now()
+
+
+def _caminho_imagem(chave_cardapio: str) -> Path:
+    return CACHE_DIR / "tabelas" / f"{chave_cardapio}.jpg"
+
+
+def _ler_cache() -> dict:
     try:
-        d = json.loads(Path(CACHE_TABELA_ARQUIVO).read_text(encoding="utf-8"))
-        if (
-            datetime.now() - datetime.fromisoformat(d["timestamp"]) > timedelta(hours=CACHE_TABELA_TTL_HOURS)
-            or d.get("pipeline") != PIPELINE_SCHEMA_VERSION
-        ):
-            return None
-        if chave_cardapio is not None and d.get("cardapio_hash") != chave_cardapio:
-            return None
-        return d.get("dados")
-    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        dados = json.loads(Path(CACHE_TABELA_ARQUIVO).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return {"pipeline": PIPELINE_SCHEMA_VERSION, "entradas": {}}
+    if "entradas" in dados:
+        return dados
+    chave = dados.get("cardapio_hash")
+    entrada = {"timestamp": dados.get("timestamp"), "dados": dados.get("dados")}
+    return {"pipeline": dados.get("pipeline"), "entradas": {chave: entrada} if chave else {}}
+
+
+def _entrada_valida(entrada: dict, agora: datetime) -> bool:
+    try:
+        return agora - datetime.fromisoformat(entrada["timestamp"]) <= timedelta(hours=CACHE_TABELA_TTL_HOURS)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def _limpar_cache(dados: dict, agora: datetime) -> bool:
+    entradas = dados.setdefault("entradas", {})
+    removidas = []
+    for chave, entrada in list(entradas.items()):
+        if not _entrada_valida(entrada, agora):
+            removidas.append(chave)
+            entradas.pop(chave, None)
+    excedentes = max(0, len(entradas) - CACHE_TABELA_MAX_ENTRADAS)
+    if excedentes:
+        ordenadas = sorted(entradas, key=lambda chave: entradas[chave].get("timestamp", ""))
+        for chave in ordenadas[:excedentes]:
+            removidas.append(chave)
+            entradas.pop(chave, None)
+    for chave in removidas:
+        _caminho_imagem(chave).unlink(missing_ok=True)
+    if removidas:
+        logger.info("Cache nutricional: %d entrada(s) removida(s); %d restante(s).", len(removidas), len(entradas))
+    return bool(removidas)
+
+
+def _escrever_cache(dados: dict) -> None:
+    p = Path(CACHE_TABELA_ARQUIVO)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    temporario = p.with_suffix(f"{p.suffix}.{threading.get_ident()}.tmp")
+    try:
+        temporario.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+        temporario.replace(p)
+    finally:
+        temporario.unlink(missing_ok=True)
+
+
+def _carregar_cache_tabela(chave_cardapio=None):
+    if chave_cardapio is None:
         return None
+    with _CACHE_LOCK:
+        agora = _agora()
+        cache = _ler_cache()
+        alterado = cache.get("pipeline") != PIPELINE_SCHEMA_VERSION
+        if alterado:
+            cache = {"pipeline": PIPELINE_SCHEMA_VERSION, "entradas": {}}
+        alterado = _limpar_cache(cache, agora) or alterado
+        if alterado:
+            _escrever_cache(cache)
+        entrada = cache["entradas"].get(chave_cardapio)
+        if entrada is None or not _entrada_valida(entrada, agora):
+            logger.info("Cache nutricional miss: %s", chave_cardapio[:12])
+            return None
+        logger.info("Cache nutricional hit: %s", chave_cardapio[:12])
+        return entrada.get("dados")
 
 
 def _salvar_cache_tabela(dados, chave_cardapio=None):
-    p = Path(CACHE_TABELA_ARQUIVO)
-    t = p.with_suffix(".tmp")
-    try:
-        t.write_text(
-            json.dumps(
-                {
-                    "timestamp": datetime.now().isoformat(),
-                    "pipeline": PIPELINE_SCHEMA_VERSION,
-                    "cardapio_hash": chave_cardapio,
-                    "dados": dados,
-                },
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
-        t.replace(p)
-    except OSError:
-        t.unlink(missing_ok=True)
+    if chave_cardapio is None:
+        return
+    with _CACHE_LOCK:
+        agora = _agora()
+        cache = _ler_cache()
+        if cache.get("pipeline") != PIPELINE_SCHEMA_VERSION:
+            cache = {"pipeline": PIPELINE_SCHEMA_VERSION, "entradas": {}}
+        cache.setdefault("entradas", {})[chave_cardapio] = {"timestamp": agora.isoformat(), "dados": dados}
+        _limpar_cache(cache, agora)
+        try:
+            _escrever_cache(cache)
+            logger.info("Cache nutricional salvo: %d entrada(s).", len(cache["entradas"]))
+        except OSError:
+            logger.warning("Não foi possível persistir o cache nutricional.", exc_info=True)
 
 
 COLUNAS_IMAGEM = [
@@ -163,7 +226,14 @@ def filtrar_csv(s):
 
 def _gerar_imagem_tabela(dados, chave_cardapio=None):
     chave = chave_cardapio or hashlib.sha256(json.dumps(dados, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
-    return renderizar_tabela(dados, CACHE_DIR / "tabelas" / f"{chave}.jpg")
+    destino = _caminho_imagem(chave)
+    if destino.is_file() and destino.stat().st_size > 0:
+        logger.info("Imagem nutricional reutilizada: %s (%d bytes).", chave[:12], destino.stat().st_size)
+        return str(destino.with_suffix(""))
+    inicio = time.perf_counter()
+    resultado = renderizar_tabela(dados, destino)
+    logger.info("Imagem nutricional renderizada em %.3fs: %s", time.perf_counter() - inicio, chave[:12])
+    return resultado
 
 
 def gerar_tabela_nutricional(cardapio) -> Optional[str]:

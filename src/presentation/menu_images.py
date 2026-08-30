@@ -12,6 +12,7 @@ from typing import List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 from core.constants import ASSETS_DIR, PATH_FONTE_LATO_BOLD, PATH_FONTE_LATO_MEDIUM
+from presentation.image_resources import carregar_fonte, carregar_marcador, copiar_template
 
 IMG_SIZE = 1080
 
@@ -33,9 +34,9 @@ def gerar_titulo(titulo_cardapio: str, nome_imagem: str, cor_texto2: Tuple[int, 
     Returns:
         Objeto Image com o título renderizado.
     """
-    img = Image.open(f"{nome_imagem}.jpg")
+    img = copiar_template(f"{nome_imagem}.jpg")
     img_draw = ImageDraw.Draw(img)
-    fonte_titulo = ImageFont.truetype(PATH_FONTE_LATO_BOLD, 50)
+    fonte_titulo = carregar_fonte(PATH_FONTE_LATO_BOLD, 50)
     wrap_textos = textwrap.wrap(titulo_cardapio.upper(), width=25)
     altura_i = 54 if len(wrap_textos) > 1 else 80
     espacamento_vertical_fonte = 0
@@ -60,7 +61,7 @@ def gerar_data(img: Image.Image, cor_texto2: Tuple[int, ...]) -> Image.Image:
         Objeto Image com a data renderizada.
     """
     img_draw = ImageDraw.Draw(img)
-    fonte_titulo = ImageFont.truetype(PATH_FONTE_LATO_BOLD, 40)
+    fonte_titulo = carregar_fonte(PATH_FONTE_LATO_BOLD, 40)
     hoje = dt.datetime.today()
     data = str(hoje.strftime("%d-%m-%Y"))
     altura_i = 972
@@ -182,9 +183,9 @@ def gerar_imagem_cardapio(
     img = gerar_titulo(titulo_cardapio, nome_imagem, cor_texto2)
     img = gerar_data(img, cor_texto2)
     textos = texto_cardapio.split("\n")
-    bolinha = Image.open(ASSETS_DIR / "bolinha.png")
+    bolinha = carregar_marcador()
     img_draw = ImageDraw.Draw(img)
-    fonte_texto = ImageFont.truetype(PATH_FONTE_LATO_MEDIUM, 40)
+    fonte_texto = carregar_fonte(PATH_FONTE_LATO_MEDIUM, 40)
     altura_i = 240
     comprimento_fonte_i = 260
     espacamento_vertical_fonte = 6
@@ -238,6 +239,7 @@ def gerar_imagem_cardapio(
 
     caminho = diretorio_saida / "img_cardapio_post_0.jpg"
     img.save(caminho, format="JPEG")
+    img.close()
     return caminho
 
 
@@ -265,7 +267,7 @@ def gerar_imagem_obs(
     img = gerar_data(img, cor_texto2)
     textos = texto_cardapio.split("\n")
     img_draw = ImageDraw.Draw(img)
-    fonte_texto = ImageFont.truetype(PATH_FONTE_LATO_MEDIUM, 45)
+    fonte_texto = carregar_fonte(PATH_FONTE_LATO_MEDIUM, 45)
     altura_i = 250
     espacamento_vertical_fonte = 6
 
@@ -282,4 +284,5 @@ def gerar_imagem_obs(
 
     caminho = diretorio_saida / "img_obs_post_1.jpg"
     img.save(caminho, format="JPEG")
+    img.close()
     return caminho

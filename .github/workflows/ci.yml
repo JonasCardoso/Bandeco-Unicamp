@@ -37,13 +37,12 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+            requirements*.txt
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-ci.txt
 
       - name: Run tests with coverage
         run: |
@@ -80,8 +79,7 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+            requirements*.txt
 
       - name: Install Ruff
         run: |
@@ -90,8 +88,39 @@ jobs:
 
       - name: Run Ruff
         run: |
-          ruff check src/ tests/
-          ruff format --check src/ tests/
+          ruff check src/ tests/ tools/
+          ruff format --check src/ tests/ tools/
+
+      - name: Check internal import graph
+        run: python tools/check_import_cycles.py
+
+
+  # ============================================================
+  # NUTRITION DEPENDENCIES
+  # ============================================================
+  nutrition-dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements*.txt
+
+      - name: Install CPU Torch and nutrition dependencies
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu -r requirements-torch.txt
+          python -m pip install -r requirements-ml.txt
+
+      - name: Validate nutrition imports
+        run: python -c "import torch, sentence_transformers; print(torch.__version__, sentence_transformers.__version__)"
 
 
   # ============================================================
@@ -104,6 +133,7 @@ jobs:
     needs:
       - test
       - lint
+      - nutrition-dependencies
 
     # Só publica imagens em push.
     # Pull Requests apenas fazem o build para validação.

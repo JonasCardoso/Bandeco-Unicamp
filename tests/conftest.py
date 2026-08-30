@@ -38,14 +38,6 @@ def _inject_external_module_mocks():
         mock_db.reference = MagicMock(return_value=mock_db_ref)
         sys.modules["firebase_admin.db"] = mock_db
 
-    # --- cv2 (OpenCV - captura de câmeras) ---
-    if "cv2" not in sys.modules:
-        mock_cv2 = MagicMock()
-        mock_cv2.IMREAD_COLOR = 1
-        mock_cv2.imwrite = MagicMock(return_value=True)
-        mock_cv2.imdecode = MagicMock(return_value=MagicMock())
-        sys.modules["cv2"] = mock_cv2
-
     # --- matplotlib / pandas / numpy (gráficos e dados) ---
     if "matplotlib" not in sys.modules:
         import matplotlib as _mpl
