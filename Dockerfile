@@ -40,5 +40,7 @@ COPY --chown=bandeco:bandeco .cache_bandeco_nutricao/taco_composicao.csv ./.cach
 COPY --chown=bandeco:bandeco .cache_bandeco_nutricao/tbca/alimentos.txt ./.cache_bandeco_nutricao/tbca/
 
 USER bandeco
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD ["python", "-m", "shared.health"]
 ENTRYPOINT ["python"]
 CMD ["-m", "app"]
