@@ -229,10 +229,14 @@ class TestFirebaseImplementacaoReal:
         assert repositorio.adicionar_contato({"telefone": 1}, "7") is True
         assert repositorio.atualizar_usuario({"cafe": 1}, "7") is True
         assert repositorio.criar_usuario("7") is True
-        assert filho.update.call_count == 3
+        assert filho.update.call_count == 2
+        criar = filho.transaction.call_args.args[0]
+        assert criar(None)["almoco"] == 0
+        existente = {"vegano": 1, "almoco": 1}
+        assert criar(existente) == existente
         ref.get.return_value = {"7": {"cafe": 1}}
         assert repositorio.pegar_todos_usuarios() == {"7": {"cafe": 1}}
-        ref.order_by_key.return_value.equal_to.return_value.get.return_value = {"7": {"cafe": 1}}
+        filho.get.return_value = {"cafe": 1}
         assert repositorio.pegar_usuario("7") == {"cafe": 1}
 
     def test_leituras_invalidas_preservam_fallback(self):

@@ -12,6 +12,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 
 from core.settings import Settings
+from modules.preferences.rules import definir_dia
 
 logger = logging.getLogger(__name__)
 
@@ -83,23 +84,67 @@ class Config:
     def pegar_todos_usuarios(self) -> dict[str, object] | bool:
         try:
             item = self.ref.get()
-            return dict(item) if item else False
+            return dict(item) if item else {}
         except (firebase_admin.exceptions.FirebaseError, TypeError, ValueError):
             logger.exception("Falha ao recuperar usuários")
             return False
 
     def pegar_usuario(self, id_user: str) -> dict[str, object] | bool:
         try:
-            item = self.ref.order_by_key().equal_to(str(id_user)).get()
-            dados = dict(item) if item else {}
-            return dados.get(str(id_user), False)
+            item = self.ref.child(str(id_user)).get()
+            return item if isinstance(item, dict) and item else False
         except (firebase_admin.exceptions.FirebaseError, TypeError, ValueError):
             logger.exception("Falha ao recuperar usuário %s", id_user)
             return False
 
     def criar_usuario(self, id_user: str) -> bool:
-        dados = {"tradicional": 1, "vegano": 0, "cafe": 0, "almoco": 1, "jantar": 1, "telefone": 0}
-        return self.atualizar_usuario(dados, str(id_user))
+        dados = {
+            "tradicional": 1,
+            "vegano": 0,
+            "cafe": 0,
+            "almoco": 0,
+            "jantar": 0,
+            "telefone": 0,
+            "cadastro_concluido": False,
+        }
+        try:
+            self.ref.child(str(id_user)).transaction(lambda atual: dados if atual is None else atual)
+            return True
+        except firebase_admin.exceptions.FirebaseError:
+            logger.exception("Falha ao criar usuário %s", id_user)
+            return False
+
+    def definir_preferencias(self, id_user: str, campos: dict, cadastro=False) -> bool:
+        def alterar(atual):
+            if atual is None or (cadastro and atual.get("cadastro_concluido", True)):
+                return atual
+            return {**atual, **campos}
+
+        try:
+            resultado = self.ref.child(str(id_user)).transaction(alterar)
+            return resultado is not None
+        except firebase_admin.exceptions.FirebaseError:
+            return False
+
+    def definir_dia(self, id_user: str, dia: int, ativo: bool) -> bool:
+        def alterar(atual):
+            if atual is None:
+                return atual
+            return definir_dia(atual, dia, ativo)
+
+        try:
+            self.ref.child(str(id_user)).transaction(alterar)
+            return True
+        except firebase_admin.exceptions.FirebaseError:
+            return False
+
+    def excluir_usuario(self, id_user: str) -> bool:
+        try:
+            self.ref.parent.update({f"{self.ref.key}/{id_user}": None, f"entregas/{id_user}": None})
+            return True
+        except firebase_admin.exceptions.FirebaseError:
+            logger.exception("Falha ao excluir usuário %s", id_user)
+            return False
 
 
 @lru_cache(maxsize=1)

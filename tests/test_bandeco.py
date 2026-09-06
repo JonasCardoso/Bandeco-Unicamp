@@ -93,3 +93,13 @@ class TestComidaSiteJson:
 
         resultado = comida_site_json("2024-01-15")
         assert resultado is None
+
+
+def test_json_sem_data_nao_inventa_cafe(monkeypatch):
+    from types import SimpleNamespace
+
+    from integrations.unicamp import menu_client
+
+    resposta = SimpleNamespace(text="ok", status_code=200, json=lambda: {"CARDAPIO": []})
+    monkeypatch.setattr(menu_client, "_post_json", lambda _: resposta)
+    assert menu_client.comida_site_json("2026-09-07") == [""] * 5

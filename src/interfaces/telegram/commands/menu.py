@@ -5,30 +5,38 @@ import asyncio
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from core.constants import DIAS
 from integrations.unicamp.price_client import obter_valores_refeicao
 from integrations.unicamp.schedule_client import horario_funcionamento
-from interfaces.telegram.keyboards import teclado_dias_semana
 from interfaces.telegram.logging import Log
-from interfaces.telegram.messaging import mandar_mensagem, mandar_mensagem_teclado
+from interfaces.telegram.messaging import mandar_mensagem
+from interfaces.telegram.screens import enviar
+
+
+async def _hoje(update, context, refeicao):
+    from integrations.firebase.user_repository import get_firebase
+    from interfaces.telegram.navigation import cardapio
+    from modules.menu.view import hoje
+
+    if update.effective_chat.type != "private":
+        await mandar_mensagem(
+            context, update.effective_chat.id, "Abra o bot no privado para consultar o cardápio.", parse_mode=None
+        )
+        return
+    dados = await asyncio.to_thread(get_firebase().pegar_usuario, update.effective_chat.id)
+    modalidade = "vegano" if dados and dados.get("vegano") and not dados.get("tradicional") else "tradicional"
+    await cardapio(update, context, refeicao, hoje(), modalidade)
 
 
 async def cafe(update: Update, context: CallbackContext):
-    periodo = "Café da manhã"
-    buttons = teclado_dias_semana(periodo, DIAS)
-    await mandar_mensagem_teclado(context, update.effective_chat.id, "Selecione o dia da semana", buttons)
+    await _hoje(update, context, "cafe")
 
 
 async def almoco(update: Update, context: CallbackContext):
-    periodo = "Almoço"
-    buttons = teclado_dias_semana(periodo, DIAS)
-    await mandar_mensagem_teclado(context, update.effective_chat.id, "Selecione o dia da semana", buttons)
+    await _hoje(update, context, "almoco")
 
 
 async def jantar(update: Update, context: CallbackContext):
-    periodo = "Jantar"
-    buttons = teclado_dias_semana(periodo, DIAS)
-    await mandar_mensagem_teclado(context, update.effective_chat.id, "Selecione o dia da semana", buttons)
+    await _hoje(update, context, "jantar")
 
 
 async def preco(update: Update, context: CallbackContext):
@@ -56,4 +64,6 @@ async def horario(update: Update, context: CallbackContext):
         await log.enviar_log(context)
         return
 
-    await mandar_mensagem(context, update.effective_chat.id, horarios)
+    await enviar(
+        context.bot, update.effective_chat.id, "Horários de funcionamento\n\n" + horarios, destacar_titulo=True
+    )

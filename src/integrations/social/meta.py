@@ -249,32 +249,36 @@ def _registrar_falha(log, plataforma: str, erro: BaseException) -> None:
     log.error(detalhe, component=f"meta.{plataforma}", event="publish_failed")
 
 
-def _postar_meta_sync(titulo: str, texto: str, log) -> None:
+def _postar_meta_sync(titulo: str, texto: str, log) -> bool:
     try:
         cliente = _novo_cliente()
     except ValueError as erro:
         _registrar_falha(log, "config", erro)
-        return
+        return False
 
     with closing(cliente), tempfile.TemporaryDirectory(prefix="bandeco-meta-") as diretorio:
         imagens = gerar_imagem_postagem(titulo, texto, log, Path(diretorio))
         if not imagens:
-            return
+            return False
         caminhos = [Path(imagem) for imagem in imagens]
 
+        sucesso = True
         try:
             with hospedar_imagens(caminhos) as urls:
                 cliente.publicar_instagram(urls, titulo)
         except (MediaStorageError, MetaAPIError, ValueError) as erro:
+            sucesso = False
             _registrar_falha(log, "instagram", erro)
 
         try:
             cliente.publicar_facebook(caminhos, titulo)
         except (MetaAPIError, OSError, ValueError) as erro:
+            sucesso = False
             _registrar_falha(log, "facebook", erro)
+        return sucesso
 
 
-async def postar_meta(context: CallbackContext, titulo: str, texto: str, log) -> None:
+async def postar_meta(context: CallbackContext, titulo: str, texto: str, log) -> bool:
     """Gera as imagens e publica nas duas plataformas sem bloquear o event loop."""
     del context
-    await asyncio.to_thread(_postar_meta_sync, titulo, texto, log)
+    return await asyncio.to_thread(_postar_meta_sync, titulo, texto, log)

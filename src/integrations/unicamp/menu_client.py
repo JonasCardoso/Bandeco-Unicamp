@@ -140,8 +140,10 @@ def comida_site_json(data: str) -> Optional[List[str]]:
         chaves = ["PRATO_PRINCIPAL", "ACOMPANHAMENTO", "PTS", "GUARNICAO", "SALADA", "SOBREMESA", "BEBIDA", "OBS"]
         refeicoes = ["Almoço", "Almoço Vegano", "Jantar", "Jantar Vegano"]
 
+        publicado = False
         for i in response.json()["CARDAPIO"]:
             if i["DATA"] == data:
+                publicado = True
                 posicao = refeicoes.index(i["TIPO"])
                 cardapio = ""
                 for chave in chaves:
@@ -164,6 +166,9 @@ def comida_site_json(data: str) -> Optional[List[str]]:
                     else:
                         cardapio += frase.capitalize() + "\n"
                 cardapios[posicao] = cardapio
+
+        if not publicado:
+            return [""] * 5
 
         cafe = "Café com leite\nAchocolatado\nPão\nMargarina\nGeleia\nFruta\n\n"
         cardapios.append(cafe)

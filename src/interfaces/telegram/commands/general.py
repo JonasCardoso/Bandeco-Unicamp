@@ -2,7 +2,9 @@
 
 import asyncio
 import datetime as dt
+import time
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -11,9 +13,11 @@ from core.constants import DIAS
 from integrations.firebase.user_repository import get_firebase
 from integrations.unicamp.menu_client import comida
 from interfaces.telegram.commands.preferences import modalidade, notificacao
+from interfaces.telegram.help_text import AJUDA, SECOES_AJUDA
 from interfaces.telegram.keyboards import teclado_contato
 from interfaces.telegram.logging import Log
 from interfaces.telegram.messaging import deletar_mensagem, mandar_mensagem, mandar_mensagem_teclado
+from interfaces.telegram.screens import enviar
 from modules.balance.service import saldo_bandeco
 from modules.balance.validation import validar_saldo_entrada
 from modules.menu.service import modalidade_com_cardapio
@@ -32,45 +36,24 @@ async def _registrar_falha(log: Log, context: CallbackContext, update: Update, e
 
 
 async def contato(update: Update, context: CallbackContext):
+    if update.effective_chat.type != "private":
+        return
     buttons = teclado_contato()
     await mandar_mensagem_teclado(
-        context, update.effective_chat.id, "Compartilhe seu contato para ser notificado no WhatsApp", buttons
+        context,
+        update.effective_chat.id,
+        "Compartilhe seu próprio telefone apenas se desejar mantê-lo no cadastro. Não há envio automático por WhatsApp. Remova com /reset_contato.",
+        buttons,
     )
 
 
 async def ajuda(update: Update, context: CallbackContext):
-    texto = r"""Com Bandeco Unicamp você pode consultar com facilidade os cardápios do RU, RS e RA da Unicamp.
-
-Além de receber notificações diárias das suas modalidades cadastradas.
-
-Use o /cafe para consultar o cardápio do café da manhã.
-Use o /almoco para consultar o cardápio do almoço.
-Use o /jantar para consultar o cardápio do jantar.
-
-Use o /modalidade para definir entre a modalidade de cardápio vegano e/ou tradicional.
-Use o /notificacao para escolher quais cardápios serão notificados.
-Use o /horario para saber o horário de funcionamento dos restaurantes.
-Use o /saldo para consultar o saldo no cartão universitário.
-Use o /tabela para consultar a tabela nutricional não oficial do cardápio.
-Use o /preco para consultar os valores atuais das refeições.
-
-Use o /ru para receber imagens das câmeras do RU.
-Use o /ra para receber imagens das câmeras do RA.
-Use o /rs para receber imagens das câmeras do RS.
-
-Use o /twitter para receber o link da página do Twitter.
-Use o /instagram para receber o link da página do Instagram.
-Use o /facebook para receber o link da página do Facebook.
-
-Use o /desativar para apagar TODOS os seus dados cadastrados no bot.
-Use o /reset\_modalidade para apagar suas preferências de modalidade (tradicional/vegano).
-Use o /reset\_notificacao para desativar apenas as notificações diárias.
-
-By @JonasCardoso"""
-    await mandar_mensagem(context, update.effective_chat.id, texto)
+    await enviar(context.bot, update.effective_chat.id, AJUDA, destacar_titulo=True, secoes_negrito=SECOES_AJUDA)
 
 
 async def mensagem_contato(update: Update, context: CallbackContext):
+    if update.effective_chat.type != "private":
+        return
     log = Log()
     repositorio = get_firebase()
     dados = await asyncio.to_thread(repositorio.pegar_usuario, update.effective_chat.id)
@@ -142,7 +125,9 @@ async def _processar_preferencia(update: Update, context: CallbackContext, log: 
         return
     dados[selecionado] = 0 if dados[selecionado] else 1
 
-    atualizado = await asyncio.to_thread(repositorio.atualizar_usuario, dados, update.effective_chat.id)
+    atualizado = await asyncio.to_thread(
+        repositorio.definir_preferencias, update.effective_chat.id, {selecionado: dados[selecionado]}
+    )
     if not atualizado:
         await _registrar_falha(
             log,
@@ -183,6 +168,7 @@ async def _processar_saldo(update: Update, context: CallbackContext, log: Log, t
         return
 
     await deletar_mensagem(context, update.effective_chat.id, update.message.message_id)
+    context.user_data.pop("saldo_ate", None)
     valor = await saldo_bandeco(update, context, ra_numero, senha, log)
     if valor is not None:
         await mandar_mensagem(context, update.effective_chat.id, valor)
@@ -197,8 +183,17 @@ async def mensagem(update: Update, context: CallbackContext):
     log = Log()
     partes_dia = texto.rsplit("de", 1)
     if len(partes_dia) == 2 and partes_dia[1].strip() in DIAS:
-        await _processar_cardapio(update, context, log, dt.datetime.today(), texto)
+        await _processar_cardapio(update, context, log, dt.datetime.now(ZoneInfo("America/Sao_Paulo")), texto)
     elif "Ativo" in texto or "Inativo" in texto:
         await _processar_preferencia(update, context, log, texto)
-    elif len(texto.split()) == 2 and texto.split()[0].isnumeric():
+    elif update.effective_chat.type == "private" and context.user_data.get("saldo_ate", 0) > time.monotonic():
+        if len(texto.split()) != 2:
+            await mandar_mensagem(
+                context, update.effective_chat.id, "Informe RA e senha ou use /cancelar.", parse_mode=None
+            )
+            return
         await _processar_saldo(update, context, log, texto)
+    elif context.user_data.pop("saldo_ate", None) is not None:
+        await mandar_mensagem(
+            context, update.effective_chat.id, "Consulta expirada. Use /saldo novamente.", parse_mode=None
+        )

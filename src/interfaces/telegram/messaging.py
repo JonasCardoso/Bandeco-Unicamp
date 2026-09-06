@@ -6,7 +6,7 @@ import logging
 import pathlib
 
 from telegram import ReplyKeyboardMarkup
-from telegram.error import TelegramError
+from telegram.error import TelegramError, TimedOut
 from telegram.ext import CallbackContext
 
 logger = logging.getLogger(__name__)
@@ -76,10 +76,18 @@ async def mandar_imagem(context: CallbackContext, chat_id, imagem, reply_to_mess
                 parse_mode="Markdown",
                 photo=arquivo,
                 reply_to_message_id=reply_to_message_id,
+                connect_timeout=10,
+                read_timeout=30,
+                write_timeout=60,
             )
         return True
     except OSError:
         logger.warning("Imagem %s indisponível para o chat %s.", caminho.name, chat_id, exc_info=True)
+    except TimedOut:
+        logger.warning(
+            "Timeout ao enviar imagem para o chat %s; entrega não confirmada, sem reenvio automático.",
+            chat_id,
+        )
     except TelegramError:
         logger.warning("Telegram recusou imagem para o chat %s.", chat_id, exc_info=True)
     except Exception:

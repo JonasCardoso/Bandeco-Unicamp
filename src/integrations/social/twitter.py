@@ -35,11 +35,12 @@ def _postar_tweet_sync(titulo: str, texto: str) -> None:
         _validar_resposta(cliente.post(partes[1], reply_to=resposta["id"]))
 
 
-async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -> None:
+async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -> bool:
     """Publica texto ou thread sem bloquear o event loop."""
     global _client
     try:
         await asyncio.to_thread(_postar_tweet_sync, titulo, texto)
+        return True
     except Exception as error:
         _client = None
         log.adicionar_log(
@@ -49,3 +50,5 @@ async def postar_tweet(context: CallbackContext, titulo: str, texto: str, log) -
             event="publish_failed",
         )
         await log.enviar_log(context)
+
+        return False

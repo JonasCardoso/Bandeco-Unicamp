@@ -30,4 +30,5 @@ def schedule_jobs(application, cafe_hour: int, lunch_hour: int, dinner_hour: int
             dt.time(hour=hora, minute=0, tzinfo=FUSO_HORARIO),
             days=DIAS_DA_SEMANA,
             name=nome,
+            data={"refeicao": {"Café da manhã": "cafe", "Almoço": "almoco", "Jantar": "jantar"}[nome]},
         )

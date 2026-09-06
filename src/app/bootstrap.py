@@ -6,7 +6,7 @@ import time
 
 from telegram.ext import Application, CommandHandler, MessageHandler
 
-from app.registry import register_handlers
+from app.registry import configurar_comandos, register_handlers
 from app.scheduler import schedule_jobs
 from core.config import (
     get_horario_almoco,
@@ -48,9 +48,10 @@ def main() -> None:
         raise SystemExit(1) from erro
 
     application = Application.builder().token(get_token_bot_telegram()).build()
+    application.post_init = configurar_comandos
     schedule_jobs(application, get_horario_cafe(), get_horario_almoco(), get_horario_jantar())
     register_handlers(application, CommandHandler, MessageHandler)
-    application.run_polling()
+    application.run_polling(allowed_updates=["message", "callback_query", "my_chat_member"])
 
 
 if __name__ == "__main__":

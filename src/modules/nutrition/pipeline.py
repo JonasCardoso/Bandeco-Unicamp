@@ -265,3 +265,8 @@ def gerar_tabela_nutricional(cardapio) -> Optional[str]:
     d = _projetar_formato_antigo(r)
     _salvar_cache_tabela(d, h)
     return _gerar_imagem_tabela(d, h)
+
+
+def dados_tabela_nutricional(cardapio):
+    """Projeção de leitura do cache para apresentações alternativas; não recalcula."""
+    return _carregar_cache_tabela(_hash_cardapio(cardapio))
