@@ -31,7 +31,7 @@ def test_pipeline_carrega_antes_do_polling(monkeypatch, caplog):
     eventos = []
     monkeypatch.setattr(bot, "get_firebase", lambda: eventos.append("firebase") or object())
     application = MagicMock()
-    application.run_polling.side_effect = lambda: eventos.append("polling")
+    application.run_polling.side_effect = lambda **_: eventos.append("polling")
 
     class Builder:
         def token(self, _):

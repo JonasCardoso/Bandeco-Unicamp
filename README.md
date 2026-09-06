@@ -6,6 +6,10 @@ Bot do Telegram que reúne cardápios dos restaurantes universitários da Unicam
 
 ## Funcionalidades
 
+- Painel `/menu`, cadastro guiado e navegação inline com datas explícitas.
+- Nutrição em um toque, pausa de notificações, dias da semana e envio silencioso.
+- Exclusão de cadastro com confirmação via `/excluir`.
+
 - Consulta de café da manhã, almoço e jantar, com modalidades tradicional e vegana.
 - Preferências e notificações diárias por usuário.
 - Consulta de horários, preços, saldo e câmeras dos restaurantes.
@@ -28,7 +32,7 @@ O entrypoint é `python -m app`. O bootstrap valida configuração, inicializa F
 - `shared/`: retry, rate limit e healthcheck.
 - `tests/`: testes unitários e de integração com mocks.
 
-Detalhes: [arquitetura](docs/architecture.md).
+Detalhes: [arquitetura](docs/architecture.md) e [experiência Telegram](docs/telegram-experience.md).
 
 ## Requisitos
 
@@ -43,6 +47,7 @@ Detalhes: [arquitetura](docs/architecture.md).
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
+python -m pip install --index-url https://download.pytorch.org/whl/cpu -r requirements-torch.txt
 python -m pip install -r requirements-dev.txt
 cp .env.example .env
 ```
@@ -52,6 +57,7 @@ No PowerShell:
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --index-url https://download.pytorch.org/whl/cpu -r requirements-torch.txt
 python -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
 $env:PYTHONPATH = "src"

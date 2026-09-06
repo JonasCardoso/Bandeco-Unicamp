@@ -20,6 +20,9 @@ REQUIRED_ENV_VARS = (
 class Settings(BaseSettings):
     """Configuração do bot; integrações opcionais são validadas quando usadas."""
 
+    telegram_rich_enabled: bool = False
+    telegram_rich_chat_ids: str = ""
+
     horario_cafe: int = 6
     horario_almoco: int = 10
     horario_jantar: int = 17

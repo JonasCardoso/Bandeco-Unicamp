@@ -19,15 +19,16 @@ def get_cam() -> Cam:
 
 async def ru(update: Update, context: CallbackContext):
     await asyncio.to_thread(get_cam().pegar_imagem, "ru")
-    await mandar_imagem(context, update.effective_chat.id, get_cam_ru_a())
-    await mandar_imagem(context, update.effective_chat.id, get_cam_ru_b())
+    primeira = await mandar_imagem(context, update.effective_chat.id, get_cam_ru_a())
+    segunda = await mandar_imagem(context, update.effective_chat.id, get_cam_ru_b())
+    return primeira and segunda
 
 
 async def ra(update: Update, context: CallbackContext):
     await asyncio.to_thread(get_cam().pegar_imagem, "ra")
-    await mandar_imagem(context, update.effective_chat.id, get_cam_ra())
+    return await mandar_imagem(context, update.effective_chat.id, get_cam_ra())
 
 
 async def rs(update: Update, context: CallbackContext):
     await asyncio.to_thread(get_cam().pegar_imagem, "rs")
-    await mandar_imagem(context, update.effective_chat.id, get_cam_rs())
+    return await mandar_imagem(context, update.effective_chat.id, get_cam_rs())

@@ -60,3 +60,17 @@ def test_main_retorna_status_compativel(monkeypatch):
         health.main()
     except SystemExit as erro:
         assert erro.code == os.EX_OK
+
+
+def test_rotinas_preservam_heartbeat_e_resultados_independentes(tmp_path, monkeypatch):
+    import json
+
+    from shared import health
+
+    monkeypatch.setattr(health, "HEALTHCHECK_FILE", tmp_path / "heartbeat")
+    health.registrar_heartbeat()
+    health.registrar_rotina("cafe", "inicio", "concluido")
+    health.registrar_rotina("jantar", "inicio", "parcial")
+    assert health.esta_saudavel()
+    assert json.loads((tmp_path / "heartbeat.cafe.json").read_text())["resultado"] == "concluido"
+    assert json.loads((tmp_path / "heartbeat.jantar.json").read_text())["resultado"] == "parcial"

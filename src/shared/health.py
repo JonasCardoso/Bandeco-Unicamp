@@ -32,3 +32,18 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def registrar_rotina(nome: str, inicio: str, resultado: str) -> None:
+    """Um arquivo por rotina evita sobrescrever resultados de jobs concorrentes."""
+    import json
+    from datetime import datetime, timezone
+
+    destino = HEALTHCHECK_FILE.parent / f"{HEALTHCHECK_FILE.name}.{nome}.json"
+    temporario = destino.with_suffix(".tmp")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    temporario.write_text(
+        json.dumps({"inicio": inicio, "fim": datetime.now(timezone.utc).isoformat(), "resultado": resultado}),
+        encoding="utf-8",
+    )
+    temporario.replace(destino)

@@ -30,3 +30,9 @@ Handlers assíncronos usam `asyncio.to_thread` para HTTP síncrono, SDKs e proce
 
 Cada entrada possui severidade, componente, evento, horário e contexto. O logger Python recebe detalhes e traceback; o canal Telegram recebe texto sanitizado. A entrega usa blocos de até 4.000 caracteres, retries limitados para falhas transitórias e retenção do que não foi confirmado.
 
+
+## Navegação e entregas
+
+A experiência nativa usa callbacks versionados, regras de dias em `modules.preferences.rules` e um modelo de leitura de cardápio independente de Telegram. O transporte de telas retorna identificador e categoria de falha, preservando os helpers booleanos legados. A nutrição é acompanhada por tarefas da aplicação, com concorrência limitada e compartilhamento por conteúdo.
+
+Os jobs recebem a refeição explicitamente e isolam Telegram, Meta e X. Entregas Telegram usam reserva transacional no Firebase, com estado incerto para timeouts. Consulte [fluxos e contratos](telegram-experience.md) para campos, limites, piloto visual e validação.
