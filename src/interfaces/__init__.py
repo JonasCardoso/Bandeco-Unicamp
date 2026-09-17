@@ -1,0 +1,1 @@
+"""Componentes da aplicação Bandeco."""

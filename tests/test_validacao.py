@@ -1,6 +1,6 @@
 """Testes unitários para validacao.py (validação de entrada de saldo)."""
 
-from validacao import validar_saldo_entrada
+from modules.balance.validation import validar_saldo_entrada
 
 
 class TestValidarSaldoEntrada:

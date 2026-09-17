@@ -1,4 +1,5 @@
 """Fixtures compartilhados para todos os testes."""
+
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
@@ -19,58 +20,49 @@ def _inject_external_module_mocks():
     Deve ser chamado uma vez no topo do conftest.py, ANTES de qualquer
     import dos módulos da src/.
     """
-    # --- groq (IA) ---
-    if 'groq' not in sys.modules:
-        mock_groq = MagicMock()
-        mock_client = MagicMock()
-        mock_groq.Groq = MagicMock(return_value=mock_client)
-        sys.modules['groq'] = mock_groq
 
     # --- firebase_admin (banco de dados) ---
-    if 'firebase_admin' not in sys.modules:
+    if "firebase_admin" not in sys.modules:
         mock_firebase = MagicMock()
         mock_firebase._apps = []
-        sys.modules['firebase_admin'] = mock_firebase
+        mock_firebase.exceptions.FirebaseError = type("FirebaseError", (Exception,), {})
+        sys.modules["firebase_admin"] = mock_firebase
 
         mock_cred = MagicMock()
         mock_cred.Certificate = MagicMock(return_value=MagicMock())
-        sys.modules['firebase_admin.credentials'] = mock_cred
+        sys.modules["firebase_admin.credentials"] = mock_cred
 
         mock_db_ref = MagicMock()
         mock_db_ref.child.return_value.update = MagicMock()
         mock_db = MagicMock()
         mock_db.reference = MagicMock(return_value=mock_db_ref)
-        sys.modules['firebase_admin.db'] = mock_db
-
-    # --- cv2 (OpenCV - captura de câmeras) ---
-    if 'cv2' not in sys.modules:
-        mock_cv2 = MagicMock()
-        mock_cv2.IMREAD_COLOR = 1
-        mock_cv2.imwrite = MagicMock(return_value=True)
-        mock_cv2.imdecode = MagicMock(return_value=MagicMock())
-        sys.modules['cv2'] = mock_cv2
+        sys.modules["firebase_admin.db"] = mock_db
 
     # --- matplotlib / pandas / numpy (gráficos e dados) ---
-    if 'matplotlib' not in sys.modules:
+    if "matplotlib" not in sys.modules:
         import matplotlib as _mpl
-        _mpl.use('Agg')
-        sys.modules['matplotlib'] = _mpl
 
-    if 'matplotlib.pyplot' not in sys.modules:
+        _mpl.use("Agg")
+        sys.modules["matplotlib"] = _mpl
+
+    if "matplotlib.pyplot" not in sys.modules:
         import matplotlib.pyplot as _plt
+
         _plt.figure = MagicMock()
         _plt.subplots = MagicMock(return_value=(MagicMock(), MagicMock()))
         _plt.savefig = MagicMock()
         _plt.close = MagicMock()
-        sys.modules['matplotlib.pyplot'] = _plt
+        sys.modules["matplotlib.pyplot"] = _plt
 
-    if 'pandas' not in sys.modules:
+    if "pandas" not in sys.modules:
         import pandas as _pd
-        sys.modules['pandas'] = _pd
 
-    if 'numpy' not in sys.modules:
+        sys.modules["pandas"] = _pd
+
+    if "numpy" not in sys.modules:
         import numpy as _np
-        sys.modules['numpy'] = _np
+
+        sys.modules["numpy"] = _np
 
 
 # Executa a injeção de mocks AGORA, antes de qualquer outro import
@@ -84,32 +76,21 @@ def mock_firebase_admin():
     Útil para testes que fazem reload do módulo config.py.
     """
     # Re-injeta mocks caso tenham sido removidos
-    if 'firebase_admin' not in sys.modules:
+    if "firebase_admin" not in sys.modules:
         mock_firebase = MagicMock()
         mock_firebase._apps = []
-        sys.modules['firebase_admin'] = mock_firebase
+        mock_firebase.exceptions.FirebaseError = type("FirebaseError", (Exception,), {})
+        sys.modules["firebase_admin"] = mock_firebase
 
         mock_cred = MagicMock()
         mock_cred.Certificate = MagicMock(return_value=MagicMock())
-        sys.modules['firebase_admin.credentials'] = mock_cred
+        sys.modules["firebase_admin.credentials"] = mock_cred
 
         mock_db_ref = MagicMock()
         mock_db_ref.child.return_value.update = MagicMock()
         mock_db = MagicMock()
         mock_db.reference = MagicMock(return_value=mock_db_ref)
-        sys.modules['firebase_admin.db'] = mock_db
-
-    yield
-
-
-@pytest.fixture(autouse=True)
-def mock_groq():
-    """Garante que groq permaneça mockado durante todo o teste."""
-    if 'groq' not in sys.modules:
-        mock_groq_mod = MagicMock()
-        mock_client = MagicMock()
-        mock_groq_mod.Groq = MagicMock(return_value=mock_client)
-        sys.modules['groq'] = mock_groq_mod
+        sys.modules["firebase_admin.db"] = mock_db
 
     yield
 
@@ -123,46 +104,50 @@ def mock_telegram_keyboard_button(monkeypatch):
     mock_kb.__repr__ = lambda self: "KeyboardButton"
 
     # Patcha no módulo telegram antes de qualquer importação
-    monkeypatch.setattr('telegram.KeyboardButton', mock_kb)
+    monkeypatch.setattr("telegram.KeyboardButton", mock_kb)
 
 
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch):
     """Mock automático de todas as variáveis de ambiente para todos os testes."""
     env = {
-        'HORARIO_CAFE': '7',
-        'HORARIO_ALMOCO': '12',
-        'HORARIO_JANTAR': '19',
-        'TOKEN_BOT_TELEGRAM': 'test_token_123',
-        'ID_LOG_CHANNEL': '-100123456',
-        'URL_BANDECO_PREFEITURA': 'https://exemplo.com/prefeitura/',
-        'URL_BANDECO_JSON': 'https://exemplo.com/json',
-        'URL_HORARIO': 'https://exemplo.com/horario',
-        'URL_SALDO': 'https://exemplo.com/saldo',
-        'DATABASE_URL_FIREBASE': 'https://test.firebaseio.com',
-        'FIREBASE_JSON': '{"type":"service_account","project_id":"test","token_uri":"https://oauth2.googleapis.com/token","client_email":"test@test.iam.gserviceaccount.com"}',
-        'API_KEY_TWITTER': 'test_key',
-        'API_KEY_SECRET_TWITTER': 'test_secret',
-        'BEARER_TOKEN_TWITTER': 'test_bearer',
-        'ACCESS_TOKEN_TWITTER': 'test_access',
-        'ACCESS_TOKEN_SECRET_TWITTER': 'test_access_secret',
-        'CAM_WEB': 'https://exemplo.com/cam/',
-        'CAM_RU_A': 'ru_a',
-        'CAM_RU_B': 'ru_b',
-        'CAM_RA': 'ra',
-        'CAM_RS': 'rs',
-        'CAM_IS_JSON': 'false',
-        'INSTAGRAM_ACCESS_TOKEN': 'test_ig_token',
-        'FACEBOOK_ACCESS_TOKEN': 'test_fb_token',
-        'INSTAGRAM_USER_ID': '123456789',
-        'FACEBOOK_USER_ID': '987654321',
-        'GRAPH_URL': 'https://graph.facebook.com/v18.0/',
-        'TOKEN_NGROK': 'test_ngrok_token',
-        'GROQ_ACCESS_TOKEN': 'test_groq_token',
+        "HORARIO_CAFE": "7",
+        "HORARIO_ALMOCO": "12",
+        "HORARIO_JANTAR": "19",
+        "TOKEN_BOT_TELEGRAM": "test_token_123",
+        "USERNAME_BOT_TELEGRAM": "bandeco_test_bot",
+        "ID_LOG_CHANNEL": "-100123456",
+        "URL_BANDECO_PREFEITURA": "https://exemplo.com/prefeitura/",
+        "URL_BANDECO_JSON": "https://exemplo.com/json",
+        "URL_HORARIO": "https://exemplo.com/horario",
+        "URL_SALDO": "https://exemplo.com/saldo",
+        "DATABASE_URL_FIREBASE": "https://test.firebaseio.com",
+        "FIREBASE_JSON": '{"type":"service_account","project_id":"test","token_uri":"https://oauth2.googleapis.com/token","client_email":"test@test.iam.gserviceaccount.com"}',
+        "TWEETKIT_COOKIE": "auth_token=test_auth; ct0=test_csrf",
+        "CAM_WEB": "https://exemplo.com/cam/",
+        "CAM_RU_A": "ru_a",
+        "CAM_RU_B": "ru_b",
+        "CAM_RA": "ra",
+        "CAM_RS": "rs",
+        "CAM_IS_JSON": "false",
+        "META_PAGE_ACCESS_TOKEN": "test_meta_page_token",
+        "META_GRAPH_API_VERSION": "v26.0",
+        "INSTAGRAM_USER_ID": "123456789",
+        "FACEBOOK_PAGE_ID": "987654321",
+        "R2_ACCOUNT_ID": "test-r2-account",
+        "R2_ACCESS_KEY_ID": "test-r2-access",
+        "R2_SECRET_ACCESS_KEY": "test-r2-secret",
+        "R2_BUCKET": "test-r2-bucket",
     }
-    monkeypatch.setattr(os.environ, 'clear', lambda: None)
+    monkeypatch.setattr(os.environ, "clear", lambda: None)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
+
+    from core.settings import clear_settings_cache
+
+    clear_settings_cache()
+    yield
+    clear_settings_cache()
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""Testes unitarios para twitter_servico.py (integracao com Twitter/X)."""
+"""Testes unitarios para integrations.social.twitter.py (integracao com Twitter/X)."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -9,17 +9,17 @@ class TestGetClient:
     """Testes para a funcao _get_client()."""
 
     def test_retorna_instancia_do_cliente(self):
-        from twitter_servico import _get_client
+        from integrations.social import twitter
 
         # Garante que o client global e resetado
-        original_client = __import__('twitter_servico')._client
-        __import__('twitter_servico')._client = None
+        original_client = twitter._client
+        twitter._client = None
 
         try:
-            result = _get_client()
+            result = twitter._get_client()
             assert result is not None
         finally:
-            __import__('twitter_servico')._client = original_client
+            twitter._client = original_client
 
 
 class TestPostarTweet:
@@ -27,73 +27,94 @@ class TestPostarTweet:
 
     @pytest.mark.asyncio
     async def test_posta_tweet_com_sucesso(self, mock_context):
-        from twitter_servico import postar_tweet
+        from integrations.social.twitter import postar_tweet
 
         mock_log = MagicMock()
         mock_log.enviar_log = AsyncMock()
 
-        # tweepy retorna lista de dicts com 'id'
-        mock_response = [{'id': '1234567890'}]
+        mock_response = {"ok": True, "id": "1234567890"}
 
-        with patch('twitter_servico._get_client') as mock_get_client:
+        with patch("integrations.social.twitter._get_client") as mock_get_client:
             mock_client_instance = MagicMock()
-            mock_client_instance.create_tweet.return_value = mock_response
+            mock_client_instance.post.return_value = mock_response
             mock_get_client.return_value = mock_client_instance
 
-            await postar_tweet(mock_context, 'Almoço', 'Frango grelhado\nArroz', mock_log)
+            await postar_tweet(mock_context, "Almoço", "Frango grelhado\nArroz", mock_log)
 
-            mock_client_instance.create_tweet.assert_called_once()
+            mock_client_instance.post.assert_called_once_with("Almoço\n\nFrango grelhado\nArroz")
+            mock_log.enviar_log.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_posta_tweet_com_observacoes_divide_em_dois(self, mock_context):
-        from twitter_servico import postar_tweet
+        from integrations.social.twitter import postar_tweet
 
         mock_log = MagicMock()
         mock_log.enviar_log = AsyncMock()
 
         call_count = [0]
 
-        def mock_create_tweet(*args, **kwargs):
+        def mock_post(*args, **kwargs):
             call_count[0] += 1
-            # tweepy retorna lista de dicts com 'id'
-            return [{'id': f'tweet_{call_count[0]}'}]
+            return {"ok": True, "id": f"tweet_{call_count[0]}"}
 
-        with patch('twitter_servico._get_client') as mock_get_client:
+        with patch("integrations.social.twitter._get_client") as mock_get_client:
             mock_client_instance = MagicMock()
-            mock_client_instance.create_tweet.side_effect = mock_create_tweet
+            mock_client_instance.post.side_effect = mock_post
             mock_get_client.return_value = mock_client_instance
 
-            texto_com_obs = 'Frango grelhado\nObservações: Contém glúten'
-            await postar_tweet(mock_context, 'Almoço', texto_com_obs, mock_log)
+            texto_com_obs = "Frango grelhado\nObservações: Contém glúten"
+            await postar_tweet(mock_context, "Almoço", texto_com_obs, mock_log)
 
-            # Deve chamar create_tweet duas vezes (cardápio + observações)
-            assert mock_client_instance.create_tweet.call_count == 2
+            assert mock_client_instance.post.call_count == 2
+            assert mock_client_instance.post.call_args_list[0].args == ("Almoço\n\nFrango grelhado\n",)
+            assert mock_client_instance.post.call_args_list[1].args == (" Contém glúten",)
+            assert mock_client_instance.post.call_args_list[1].kwargs == {"reply_to": "tweet_1"}
 
     @pytest.mark.asyncio
     async def test_posta_tweet_erro_nao_propaga(self, mock_context):
-        from twitter_servico import postar_tweet
+        from integrations.social.twitter import postar_tweet
 
         mock_log = MagicMock()
         mock_log.enviar_log = AsyncMock()
 
-        with patch('twitter_servico._get_client') as mock_get_client:
+        with patch("integrations.social.twitter._get_client") as mock_get_client:
             mock_client_instance = MagicMock()
-            mock_client_instance.create_tweet.side_effect = Exception('Erro na API do Twitter')
+            mock_client_instance.post.side_effect = Exception("Erro na API do Twitter")
             mock_get_client.return_value = mock_client_instance
 
             # Não deve levantar exceção
-            await postar_tweet(mock_context, 'Almoço', 'Frango grelhado', mock_log)
+            await postar_tweet(mock_context, "Almoço", "Frango grelhado", mock_log)
 
             # Verifica que o log foi registrado
             assert mock_log.adicionar_log.called
             assert mock_log.enviar_log.called
+            from integrations.social import twitter
+
+            assert twitter._client is None
+
+    @pytest.mark.asyncio
+    async def test_resposta_de_falha_e_enviada_ao_log(self, mock_context):
+        from integrations.social.twitter import postar_tweet
+
+        mock_log = MagicMock()
+        mock_log.enviar_log = AsyncMock()
+
+        with patch("integrations.social.twitter._get_client") as mock_get_client:
+            mock_client_instance = MagicMock()
+            mock_client_instance.post.return_value = {"ok": False, "error": "cookie expirado"}
+            mock_get_client.return_value = mock_client_instance
+
+            await postar_tweet(mock_context, "Almoço", "Frango grelhado", mock_log)
+
+            assert "cookie expirado" in mock_log.adicionar_log.call_args.args[0]
+            mock_log.enviar_log.assert_awaited_once_with(mock_context)
 
 
 class TestTwitterServiceIntegration:
-    """Testes de integracao para twitter_servico."""
+    """Testes de integracao para integrations.social.twitter."""
 
     def test_modulo_tem_funcoes_esperadas(self):
-        import twitter_servico
+        from integrations.social import twitter as twitter_servico
 
-        assert hasattr(twitter_servico, '_get_client')
-        assert hasattr(twitter_servico, 'postar_tweet')
+        assert hasattr(twitter_servico, "_get_client")
+        assert hasattr(twitter_servico, "postar_tweet")
